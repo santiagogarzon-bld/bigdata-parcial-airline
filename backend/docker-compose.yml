@@ -1,0 +1,18 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: airline
+      POSTGRES_USER: airline
+      POSTGRES_PASSWORD: airline_local_only
+    ports:
+      - "54329:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U airline -d airline"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+    volumes:
+      - airline_pgdata:/var/lib/postgresql/data
+volumes:
+  airline_pgdata:
