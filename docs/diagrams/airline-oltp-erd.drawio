@@ -1,0 +1,391 @@
+<mxfile host="65bd71144e">
+    <diagram id="autolayout" name="Page-1">
+        <mxGraphModel dx="652" dy="648" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="agencies" value="agencies&#xa;PK id: VARCHAR(100)&#xa;name: VARCHAR(120)&#xa;active: BOOLEAN" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=6;spacingTop=4;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
+                    <mxGeometry x="600" y="2020" width="170" height="90" as="geometry"/>
+                </mxCell>
+                <mxCell id="aircraft_types" value="aircraft_types&#xa;PK id: UUID&#xa;code: VARCHAR(20)&#xa;manufacturer: VARCHAR(80)&#xa;model: VARCHAR(80)&#xa;active: BOOLEAN" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=6;spacingTop=4;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
+                    <mxGeometry x="1680" y="1600" width="210" height="130" as="geometry"/>
+                </mxCell>
+                <mxCell id="airports" value="airports&#xa;PK code: VARCHAR(3)&#xa;iana_zone: VARCHAR(64)&#xa;name: VARCHAR(120)" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=6;spacingTop=4;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
+                    <mxGeometry x="1940" y="1890" width="190" height="90" as="geometry"/>
+                </mxCell>
+                <mxCell id="audit_events" value="audit_events&#xa;PK id: UUID&#xa;entity_type: VARCHAR(40)&#xa;entity_id: VARCHAR(40)&#xa;old_state: VARCHAR(32)&#xa;new_state: VARCHAR(32)&#xa;actor: VARCHAR(100)&#xa;reason: TEXT&#xa;correlation_id: VARCHAR(100)&#xa;created_at: TIMESTAMPTZ&#xa;data: JSON" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=6;spacingTop=4;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
+                    <mxGeometry x="140" y="870" width="230" height="230" as="geometry"/>
+                </mxCell>
+                <mxCell id="cabins" value="cabins&#xa;PK code: VARCHAR(16)&#xa;display_name: VARCHAR(40)&#xa;sort_order: INTEGER&#xa;active: BOOLEAN" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=6;spacingTop=4;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
+                    <mxGeometry x="150" y="740" width="210" height="110" as="geometry"/>
+                </mxCell>
+                <mxCell id="fare_rules" value="fare_rules&#xa;PK code: VARCHAR(40)&#xa;description: VARCHAR(200)&#xa;value: NUMERIC(8,4)&#xa;active: BOOLEAN" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=6;spacingTop=4;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
+                    <mxGeometry x="150" y="610" width="210" height="110" as="geometry"/>
+                </mxCell>
+                <mxCell id="idempotency_records" value="idempotency_records&#xa;PK id: UUID&#xa;scope: VARCHAR(80)&#xa;actor_id: VARCHAR(100)&#xa;idempotency_key: VARCHAR(128)&#xa;payload_hash: VARCHAR(64)&#xa;resource_type: VARCHAR(40)&#xa;resource_id: VARCHAR(40)&#xa;created_at: TIMESTAMPTZ&#xa;expires_at: TIMESTAMPTZ" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=6;spacingTop=4;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
+                    <mxGeometry x="140" y="380" width="240" height="210" as="geometry"/>
+                </mxCell>
+                <mxCell id="operational_settings" value="operational_settings&#xa;PK key: VARCHAR(64)&#xa;value: VARCHAR(80)&#xa;description: VARCHAR(200)" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=6;spacingTop=4;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
+                    <mxGeometry x="150" y="280" width="210" height="90" as="geometry"/>
+                </mxCell>
+                <mxCell id="reservations" value="reservations&#xa;PK id: UUID&#xa;locator: VARCHAR(12)&#xa;state: VARCHAR(24)&#xa;cabin: VARCHAR(16)&#xa;channel: VARCHAR(16)&#xa;actor_id: VARCHAR(100)&#xa;agency_id: VARCHAR(100)&#xa;agent_id: VARCHAR(100)&#xa;created_at: TIMESTAMPTZ&#xa;expires_at: TIMESTAMPTZ&#xa;released_at: TIMESTAMPTZ&#xa;idempotency_key: VARCHAR(128)&#xa;idempotency_scope: VARCHAR(196)&#xa;payload_hash: VARCHAR(64)&#xa;total: NUMERIC(14,2)&#xa;commission: NUMERIC(14,2)" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=6;spacingTop=4;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
+                    <mxGeometry x="1150" y="1270" width="250" height="350" as="geometry"/>
+                </mxCell>
+                <mxCell id="agents" value="agents&#xa;PK id: VARCHAR(100)&#xa;FK agency_id: VARCHAR(100)&#xa;display_name: VARCHAR(120)&#xa;active: BOOLEAN" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=6;spacingTop=4;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
+                    <mxGeometry x="150" y="2010" width="220" height="110" as="geometry"/>
+                </mxCell>
+                <mxCell id="aircraft" value="aircraft&#xa;PK id: UUID&#xa;code: VARCHAR(20)&#xa;active: BOOLEAN&#xa;FK aircraft_type_id: UUID" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=6;spacingTop=4;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
+                    <mxGeometry x="1430" y="1610" width="210" height="110" as="geometry"/>
+                </mxCell>
+                <mxCell id="itineraries" value="itineraries&#xa;PK id: UUID&#xa;FK reservation_id: UUID&#xa;created_at: TIMESTAMPTZ" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=6;spacingTop=4;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
+                    <mxGeometry x="880" y="1660" width="200" height="90" as="geometry"/>
+                </mxCell>
+                <mxCell id="passengers" value="passengers&#xa;PK id: UUID&#xa;FK reservation_id: UUID&#xa;given_name: VARCHAR(100)&#xa;surname: VARCHAR(100)" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=6;spacingTop=4;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
+                    <mxGeometry x="880" y="1270" width="200" height="110" as="geometry"/>
+                </mxCell>
+                <mxCell id="payments" value="payments&#xa;PK id: UUID&#xa;FK reservation_id: UUID&#xa;operation_reference: VARCHAR(128)&#xa;state: VARCHAR(16)&#xa;amount: NUMERIC(14,2)&#xa;currency: VARCHAR(3)&#xa;created_at: TIMESTAMPTZ" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=6;spacingTop=4;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
+                    <mxGeometry x="840" y="1470" width="270" height="170" as="geometry"/>
+                </mxCell>
+                <mxCell id="routes" value="routes&#xa;PK id: UUID&#xa;code: VARCHAR(20)&#xa;FK origin: VARCHAR(3)&#xa;FK destination: VARCHAR(3)&#xa;active: BOOLEAN" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=6;spacingTop=4;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
+                    <mxGeometry x="1680" y="1770" width="220" height="130" as="geometry"/>
+                </mxCell>
+                <mxCell id="refunds" value="refunds&#xa;PK id: UUID&#xa;FK payment_id: UUID&#xa;FK reservation_id: UUID&#xa;amount: NUMERIC(14,2)&#xa;reason: VARCHAR(200)&#xa;created_at: TIMESTAMPTZ" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=6;spacingTop=4;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
+                    <mxGeometry x="580" y="1480" width="200" height="150" as="geometry"/>
+                </mxCell>
+                <mxCell id="scheduled_flights" value="scheduled_flights&#xa;PK id: UUID&#xa;number: VARCHAR(10)&#xa;active: BOOLEAN&#xa;FK route_id: UUID" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=6;spacingTop=4;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
+                    <mxGeometry x="1450" y="1780" width="170" height="110" as="geometry"/>
+                </mxCell>
+                <mxCell id="seats" value="seats&#xa;PK id: UUID&#xa;FK aircraft_id: UUID&#xa;label: VARCHAR(8)&#xa;cabin: VARCHAR(16)" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=6;spacingTop=4;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
+                    <mxGeometry x="1190" y="1140" width="170" height="110" as="geometry"/>
+                </mxCell>
+                <mxCell id="tickets" value="tickets&#xa;PK id: UUID&#xa;FK reservation_id: UUID&#xa;FK passenger_id: UUID&#xa;number: VARCHAR(30)&#xa;state: VARCHAR(16)&#xa;issued_at: TIMESTAMPTZ" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=6;spacingTop=4;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
+                    <mxGeometry x="580" y="1310" width="200" height="150" as="geometry"/>
+                </mxCell>
+                <mxCell id="flight_instances" value="flight_instances&#xa;PK id: UUID&#xa;FK scheduled_flight_id: UUID&#xa;FK aircraft_id: UUID&#xa;service_date: VARCHAR(10)&#xa;state: VARCHAR(16)" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=6;spacingTop=4;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
+                    <mxGeometry x="1160" y="1640" width="230" height="130" as="geometry"/>
+                </mxCell>
+                <mxCell id="scheduled_legs" value="scheduled_legs&#xa;PK id: UUID&#xa;FK scheduled_flight_id: UUID&#xa;sequence: INTEGER&#xa;FK origin: VARCHAR(3)&#xa;FK destination: VARCHAR(3)&#xa;base_economy: NUMERIC(14,2)&#xa;base_business: NUMERIC(14,2)&#xa;airport_fee: NUMERIC(14,2)" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=6;spacingTop=4;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
+                    <mxGeometry x="1160" y="1780" width="230" height="190" as="geometry"/>
+                </mxCell>
+                <mxCell id="flight_leg_instances" value="flight_leg_instances&#xa;PK id: UUID&#xa;FK flight_instance_id: UUID&#xa;FK scheduled_leg_id: UUID&#xa;sequence: INTEGER&#xa;FK origin: VARCHAR(3)&#xa;FK destination: VARCHAR(3)&#xa;departure_at: TIMESTAMPTZ&#xa;arrival_at: TIMESTAMPTZ" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=6;spacingTop=4;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
+                    <mxGeometry x="870" y="1790" width="220" height="190" as="geometry"/>
+                </mxCell>
+                <mxCell id="coupons" value="coupons&#xa;PK id: UUID&#xa;FK ticket_id: UUID&#xa;FK flight_leg_instance_id: UUID&#xa;state: VARCHAR(16)" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=6;spacingTop=4;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
+                    <mxGeometry x="130" y="1670" width="250" height="110" as="geometry"/>
+                </mxCell>
+                <mxCell id="inventories" value="inventories&#xa;PK id: UUID&#xa;FK flight_leg_instance_id: UUID&#xa;cabin: VARCHAR(16)&#xa;capacity: INTEGER&#xa;held: INTEGER&#xa;confirmed: INTEGER" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=6;spacingTop=4;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
+                    <mxGeometry x="560" y="1810" width="250" height="150" as="geometry"/>
+                </mxCell>
+                <mxCell id="itinerary_segments" value="itinerary_segments&#xa;PK id: UUID&#xa;FK itinerary_id: UUID&#xa;FK flight_leg_instance_id: UUID&#xa;sequence: INTEGER" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=6;spacingTop=4;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
+                    <mxGeometry x="560" y="1650" width="250" height="110" as="geometry"/>
+                </mxCell>
+                <mxCell id="reservation_items" value="reservation_items&#xa;PK id: UUID&#xa;FK reservation_id: UUID&#xa;FK passenger_id: UUID&#xa;FK flight_leg_instance_id: UUID&#xa;FK inventory_id: UUID&#xa;FK seat_id: UUID&#xa;sequence: INTEGER&#xa;resource_state: VARCHAR(16)&#xa;base_fare: NUMERIC(14,2)&#xa;advance_multiplier: NUMERIC(5,2)&#xa;cabin_multiplier: NUMERIC(5,2)&#xa;airport_fee: NUMERIC(14,2)&#xa;tax: NUMERIC(14,2)&#xa;total: NUMERIC(14,2)&#xa;commission: NUMERIC(14,2)" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=6;spacingTop=4;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
+                    <mxGeometry x="130" y="1120" width="260" height="330" as="geometry"/>
+                </mxCell>
+                <mxCell id="diagram_title" value="AIRLINE RESERVATION SYSTEM — OLTP ERD" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;fillColor=none;strokeColor=none;fontFamily=Helvetica;fontSize=20;fontStyle=1;fontColor=#232F3E;" parent="1" vertex="1">
+                    <mxGeometry y="210" width="520" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="database_definition" value="BASE DE DATOS A CREAR&#xa;Motor: PostgreSQL 16&#xa;Base lógica: airline_oltp&#xa;Esquema: public&#xa;Finalidad: fuente transaccional OLTP&#xa;Despliegue: Amazon RDS for PostgreSQL&#xa;DDL y actualizaciones: migraciones Alembic&#xa;Fuera de alcance: airline_olap (base analítica separada)" style="shape=note;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=12;fillColor=#E8F3E0;strokeColor=#7AA116;fontFamily=Helvetica;fontSize=12;fontColor=#232F3E;" parent="1" vertex="1">
+                    <mxGeometry x="60" width="390" height="190" as="geometry"/>
+                </mxCell>
+                <mxCell id="e0" value="agency_id" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;fontSize=11;labelBackgroundColor=#ffffff;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;" parent="1" source="agents" target="agencies" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="370" y="2060"/>
+                            <mxPoint x="590" y="2060"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e1" value="aircraft_type_id" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;fontSize=11;labelBackgroundColor=#ffffff;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;" parent="1" source="aircraft" target="aircraft_types" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="1640" y="1670"/>
+                            <mxPoint x="1670" y="1670"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e2" value="reservation_id" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;fontSize=11;labelBackgroundColor=#ffffff;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;entryX=0;entryY=0.857143;entryDx=0;entryDy=0;" parent="1" source="itineraries" target="reservations" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="1120" y="1700"/>
+                            <mxPoint x="1150" y="1700"/>
+                            <mxPoint x="1150" y="1700"/>
+                            <mxPoint x="1150" y="1700"/>
+                            <mxPoint x="1150" y="1630"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e3" value="reservation_id" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;fontSize=11;labelBackgroundColor=#ffffff;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;entryX=0;entryY=0.285714;entryDx=0;entryDy=0;" parent="1" source="passengers" target="reservations" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="1080" y="1320"/>
+                            <mxPoint x="1140" y="1320"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e4" value="reservation_id" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;fontSize=11;labelBackgroundColor=#ffffff;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;entryX=0;entryY=0.714286;entryDx=0;entryDy=0;" parent="1" source="payments" target="reservations" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="1110" y="1540"/>
+                            <mxPoint x="1140" y="1540"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e5" value="origin" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;fontSize=11;labelBackgroundColor=#ffffff;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;exitX=1;exitY=0.333333;exitDx=0;exitDy=0;entryX=0;entryY=0.142857;entryDx=0;entryDy=0;" parent="1" source="routes" target="airports" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="1900" y="1890"/>
+                            <mxPoint x="1930" y="1890"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e6" value="destination" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;fontSize=11;labelBackgroundColor=#ffffff;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;exitX=1;exitY=0.666667;exitDx=0;exitDy=0;entryX=0;entryY=0.285714;entryDx=0;entryDy=0;" parent="1" source="routes" target="airports" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="1900" y="1890"/>
+                            <mxPoint x="1930" y="1890"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e7" value="payment_id" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;fontSize=11;labelBackgroundColor=#ffffff;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;exitX=1;exitY=0.666667;exitDx=0;exitDy=0;" parent="1" source="refunds" target="payments" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="780" y="1550"/>
+                            <mxPoint x="830" y="1550"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e8" value="reservation_id" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;fontSize=11;labelBackgroundColor=#ffffff;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;entryX=0;entryY=0.571429;entryDx=0;entryDy=0;exitX=1;exitY=0.333333;exitDx=0;exitDy=0;" parent="1" source="refunds" target="reservations" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="680" y="1470"/>
+                            <mxPoint x="680" y="1470"/>
+                            <mxPoint x="680" y="1470"/>
+                            <mxPoint x="680" y="1470"/>
+                            <mxPoint x="1140" y="1470"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e9" value="route_id" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;fontSize=11;labelBackgroundColor=#ffffff;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;" parent="1" source="scheduled_flights" target="routes" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="1620" y="1830"/>
+                            <mxPoint x="1670" y="1830"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e10" value="aircraft_id" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;fontSize=11;labelBackgroundColor=#ffffff;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;" parent="1" source="seats" target="aircraft" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="1440" y="1190"/>
+                            <mxPoint x="1540" y="1190"/>
+                            <mxPoint x="1540" y="1190"/>
+                            <mxPoint x="1540" y="1190"/>
+                            <mxPoint x="1540" y="1600"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e11" value="reservation_id" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;fontSize=11;labelBackgroundColor=#ffffff;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;entryX=0;entryY=0.428571;entryDx=0;entryDy=0;exitX=1;exitY=0.666667;exitDx=0;exitDy=0;" parent="1" source="tickets" target="reservations" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="780" y="1420"/>
+                            <mxPoint x="1140" y="1420"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e12" value="passenger_id" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;fontSize=11;labelBackgroundColor=#ffffff;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;exitX=1;exitY=0.333333;exitDx=0;exitDy=0;entryX=0;entryY=0.666667;entryDx=0;entryDy=0;" parent="1" source="tickets" target="passengers" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="780" y="1340"/>
+                            <mxPoint x="870" y="1340"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e13" value="scheduled_flight_id" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;fontSize=11;labelBackgroundColor=#ffffff;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;exitX=1;exitY=0.666667;exitDx=0;exitDy=0;entryX=0;entryY=0.333333;entryDx=0;entryDy=0;" parent="1" source="flight_instances" target="scheduled_flights" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="1460" y="1750"/>
+                            <mxPoint x="1540" y="1750"/>
+                            <mxPoint x="1540" y="1750"/>
+                            <mxPoint x="1540" y="1750"/>
+                            <mxPoint x="1540" y="1770"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e14" value="aircraft_id" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;fontSize=11;labelBackgroundColor=#ffffff;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;exitX=1;exitY=0.333333;exitDx=0;exitDy=0;" parent="1" source="flight_instances" target="aircraft" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="1390" y="1680"/>
+                            <mxPoint x="1420" y="1680"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e15" value="scheduled_flight_id" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;fontSize=11;labelBackgroundColor=#ffffff;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;entryX=0;entryY=0.666667;entryDx=0;entryDy=0;exitX=1;exitY=0.25;exitDx=0;exitDy=0;" parent="1" source="scheduled_legs" target="scheduled_flights" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="1390" y="1840"/>
+                            <mxPoint x="1440" y="1840"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e16" value="origin" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;fontSize=11;labelBackgroundColor=#ffffff;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;entryX=0;entryY=0.428571;entryDx=0;entryDy=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" parent="1" source="scheduled_legs" target="airports" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="1390" y="1920"/>
+                            <mxPoint x="1930" y="1920"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e17" value="destination" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;fontSize=11;labelBackgroundColor=#ffffff;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;entryX=0;entryY=0.571429;entryDx=0;entryDy=0;exitX=1;exitY=0.75;exitDx=0;exitDy=0;" parent="1" source="scheduled_legs" target="airports" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="1390" y="1920"/>
+                            <mxPoint x="1930" y="1920"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e18" value="flight_instance_id" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;fontSize=11;labelBackgroundColor=#ffffff;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;exitX=1;exitY=0.2;exitDx=0;exitDy=0;" parent="1" source="flight_leg_instances" target="flight_instances" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="1080" y="1770"/>
+                            <mxPoint x="1080" y="1760"/>
+                            <mxPoint x="1080" y="1760"/>
+                            <mxPoint x="1080" y="1760"/>
+                            <mxPoint x="1150" y="1760"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e19" value="scheduled_leg_id" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;fontSize=11;labelBackgroundColor=#ffffff;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;exitX=1;exitY=0.4;exitDx=0;exitDy=0;" parent="1" source="flight_leg_instances" target="scheduled_legs" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="1090" y="1880"/>
+                            <mxPoint x="1150" y="1880"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e20" value="origin" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;fontSize=11;labelBackgroundColor=#ffffff;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;entryX=0;entryY=0.714286;entryDx=0;entryDy=0;exitX=1;exitY=0.6;exitDx=0;exitDy=0;" parent="1" source="flight_leg_instances" target="airports" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="1010" y="1990"/>
+                            <mxPoint x="1010" y="1990"/>
+                            <mxPoint x="1010" y="1990"/>
+                            <mxPoint x="1010" y="1990"/>
+                            <mxPoint x="2060" y="1990"/>
+                            <mxPoint x="2060" y="1990"/>
+                            <mxPoint x="2060" y="1990"/>
+                            <mxPoint x="2060" y="1990"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e21" value="destination" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;fontSize=11;labelBackgroundColor=#ffffff;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;entryX=0;entryY=0.857143;entryDx=0;entryDy=0;exitX=1;exitY=0.8;exitDx=0;exitDy=0;" parent="1" source="flight_leg_instances" target="airports" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="1010" y="1990"/>
+                            <mxPoint x="1010" y="1990"/>
+                            <mxPoint x="1010" y="1990"/>
+                            <mxPoint x="1010" y="1990"/>
+                            <mxPoint x="2060" y="1990"/>
+                            <mxPoint x="2060" y="1990"/>
+                            <mxPoint x="2060" y="1990"/>
+                            <mxPoint x="2060" y="1990"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e22" value="ticket_id" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;fontSize=11;labelBackgroundColor=#ffffff;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;exitX=1;exitY=0.333333;exitDx=0;exitDy=0;" parent="1" source="coupons" target="tickets" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="260" y="1707"/>
+                            <mxPoint x="260" y="1510"/>
+                            <mxPoint x="530" y="1510"/>
+                            <mxPoint x="530" y="1385"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e23" value="flight_leg_instance_id" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;fontSize=11;labelBackgroundColor=#ffffff;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;exitX=1;exitY=0.666667;exitDx=0;exitDy=0;entryX=0;entryY=0.6;entryDx=0;entryDy=0;" parent="1" source="coupons" target="flight_leg_instances" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="560" y="1770"/>
+                            <mxPoint x="870" y="1770"/>
+                            <mxPoint x="870" y="1770"/>
+                            <mxPoint x="870" y="1770"/>
+                            <mxPoint x="870" y="1780"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e24" value="flight_leg_instance_id" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;fontSize=11;labelBackgroundColor=#ffffff;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;entryX=0;entryY=0.8;entryDx=0;entryDy=0;" parent="1" source="inventories" target="flight_leg_instances" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="810" y="1890"/>
+                            <mxPoint x="860" y="1890"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e25" value="itinerary_id" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;fontSize=11;labelBackgroundColor=#ffffff;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;exitX=1;exitY=0.333333;exitDx=0;exitDy=0;" parent="1" source="itinerary_segments" target="itineraries" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="810" y="1690"/>
+                            <mxPoint x="870" y="1690"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e26" value="flight_leg_instance_id" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;fontSize=11;labelBackgroundColor=#ffffff;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;entryX=0;entryY=0.4;entryDx=0;entryDy=0;exitX=1;exitY=0.666667;exitDx=0;exitDy=0;" parent="1" source="itinerary_segments" target="flight_leg_instances" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="840" y="1720"/>
+                            <mxPoint x="870" y="1720"/>
+                            <mxPoint x="870" y="1720"/>
+                            <mxPoint x="870" y="1720"/>
+                            <mxPoint x="870" y="1780"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e27" value="reservation_id" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;fontSize=11;labelBackgroundColor=#ffffff;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;entryX=0;entryY=0.142857;entryDx=0;entryDy=0;" parent="1" source="reservation_items" target="reservations" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="1170" y="1260"/>
+                            <mxPoint x="1170" y="1320"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e28" value="passenger_id" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;fontSize=11;labelBackgroundColor=#ffffff;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;entryX=0;entryY=0.333333;entryDx=0;entryDy=0;" parent="1" source="reservation_items" target="passengers" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="880" y="1290"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e29" value="flight_leg_instance_id" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;fontSize=11;labelBackgroundColor=#ffffff;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;entryX=0;entryY=0.2;entryDx=0;entryDy=0;" parent="1" source="reservation_items" target="flight_leg_instances" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="480" y="1350"/>
+                            <mxPoint x="480" y="1800"/>
+                            <mxPoint x="870" y="1800"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e30" value="inventory_id" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;fontSize=11;labelBackgroundColor=#ffffff;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;" parent="1" source="reservation_items" target="inventories" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="420" y="1400"/>
+                            <mxPoint x="430" y="1400"/>
+                            <mxPoint x="430" y="1400"/>
+                            <mxPoint x="430" y="1400"/>
+                            <mxPoint x="430" y="1890"/>
+                            <mxPoint x="430" y="1890"/>
+                            <mxPoint x="430" y="1890"/>
+                            <mxPoint x="550" y="1890"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e31" value="seat_id" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;fontSize=11;labelBackgroundColor=#ffffff;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;exitX=1;exitY=0.2;exitDx=0;exitDy=0;" parent="1" source="reservation_items" target="seats" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="390" y="1190"/>
+                            <mxPoint x="1180" y="1190"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>

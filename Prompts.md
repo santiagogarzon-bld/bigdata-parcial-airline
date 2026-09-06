@@ -21,3 +21,13 @@ Genial, crea un commit.
 # Engine de Aerolinea 
 Es hora de la planeación de desarrollo.  La idea es antes de empezar todo de manera paralela de todo al mismo tiempo, la fino es crear el motor primeramente que es el corazon de todo y antes que los demas componentes, con tests unitarios, de funcionamiento, etc. Para que sea un componente bastante confiable y que cumpla con los requerimientos funcionales. 
 No vas a desarrollar tu, debes iniciar un agente al que le vas a pasar las especificaciones de lo que debe desarrollar de manera muy muy bien definida, tanto tecnica como funcionalmente que use GPT 5.6 Terra High. ADELANTE!!!
+
+# Database hardening delegation (sanitized)
+
+Design and harden the PostgreSQL reservation schema with Alembic as the only DDL authority. Deliver a guarded, idempotent bootstrap command, separate required catalogs from synthetic demo data, preserve booking-engine locking semantics, and prove fresh setup, repeatability, legacy upgrades, constraints, drift contract, linting and PostgreSQL concurrency tests. Do not include credentials, production URLs, AWS IAM work, or HTTP/API changes.
+
+
+
+# Diagrama ERD base de datos OLTP
+Crea el diagrama de base de datos  usando la skill  /home/nuvu-pc-n4gx/.claude/skills/drawio-skill, donde crearás el ERD (solo el .drawio) y debes dejar documentado cual es la base de datos a crear.
+
