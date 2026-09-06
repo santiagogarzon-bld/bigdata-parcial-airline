@@ -7,14 +7,16 @@ name = "airline-core"
 version = "0.1.0"
 requires-python = ">=3.12"
 dependencies = [
+  "fastapi>=0.104,<1",
   "SQLAlchemy>=2.0.36,<2.1",
   "psycopg[binary]>=3.2,<3.3",
   "alembic>=1.14,<1.15",
   "pydantic>=2.10,<3",
+  "uvicorn>=0.34,<1",
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8.3", "pytest-cov>=6", "ruff>=0.8", "mypy>=1.13"]
+dev = ["pytest>=8.3", "pytest-cov>=6", "ruff>=0.8", "mypy>=1.13", "httpx>=0.27"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -38,3 +40,6 @@ python_version = "3.12"
 strict = true
 packages = ["airline_core"]
 exclude = ["alembic"]
+
+[tool.setuptools.packages.find]
+include = ["airline_core*"]

@@ -204,8 +204,12 @@ class Reservation(Base):
     cabin: Mapped[Cabin] = mapped_column(String(16), nullable=False)
     channel: Mapped[Channel] = mapped_column(String(16), nullable=False)
     actor_id: Mapped[str] = mapped_column(String(100), nullable=False)
-    agency_id: Mapped[str | None] = mapped_column(String(100))
-    agent_id: Mapped[str | None] = mapped_column(String(100))
+    agency_id: Mapped[str | None] = mapped_column(
+        ForeignKey("agencies.id", ondelete="RESTRICT", onupdate="CASCADE")
+    )
+    agent_id: Mapped[str | None] = mapped_column(
+        ForeignKey("agents.id", ondelete="RESTRICT", onupdate="CASCADE")
+    )
     created_at: Mapped[datetime] = utcnow()
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     released_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
@@ -408,6 +412,19 @@ class Agent(Base):
     )
     display_name: Mapped[str] = mapped_column(String(120), nullable=False)
     active: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="true")
+
+
+class DemoIdentity(Base):
+    __tablename__ = "demo_identities"
+    id: Mapped[str] = mapped_column(String(100), primary_key=True)
+    role: Mapped[str] = mapped_column(String(32), nullable=False)
+    agency_id: Mapped[str | None] = mapped_column(ForeignKey("agencies.id", ondelete="RESTRICT"))
+    active: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="true")
+    __table_args__ = (
+        CheckConstraint(
+            "role IN ('PASSENGER','AGENCY_AGENT','ADMIN','AIRPORT')", name="ck_demo_identity_role"
+        ),
+    )
 
 
 class FareRule(Base):

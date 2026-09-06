@@ -9,8 +9,13 @@ SALES_CUTOFF = timedelta(minutes=60)
 SALES_HORIZON = timedelta(days=180)
 
 
-def validate_sale(departure: datetime, now: datetime) -> None:
-    if departure - now <= SALES_CUTOFF or departure - now > SALES_HORIZON:
+def validate_sale(
+    departure: datetime,
+    now: datetime,
+    cutoff: timedelta = SALES_CUTOFF,
+    horizon: timedelta = SALES_HORIZON,
+) -> None:
+    if departure - now <= cutoff or departure - now > horizon:
         raise ValidationError("Departure outside sales window")
 
 
@@ -25,8 +30,13 @@ def require_approval(state: ReservationState, expiry: datetime, now: datetime) -
         raise InvalidState("Reservation is not pending payment")
 
 
-def require_cancellation(state: ReservationState, departure: datetime, now: datetime) -> None:
+def require_cancellation(
+    state: ReservationState,
+    departure: datetime,
+    now: datetime,
+    cutoff: timedelta = CANCELLATION_CUTOFF,
+) -> None:
     if state == ReservationState.PENDING_PAYMENT:
         return
-    if state != ReservationState.CONFIRMED or departure - now < CANCELLATION_CUTOFF:
+    if state != ReservationState.CONFIRMED or departure - now < cutoff:
         raise CancellationNotAllowed("Cancellation not allowed")

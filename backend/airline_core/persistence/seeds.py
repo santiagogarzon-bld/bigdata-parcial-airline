@@ -17,6 +17,7 @@ from .models import (
     AircraftType,
     Airport,
     CabinCatalog,
+    DemoIdentity,
     FareRule,
     FlightInstance,
     FlightLegInstance,
@@ -114,6 +115,11 @@ def seed_parameters(session: Session) -> None:
                 "description": "Sales close before departure",
             },
             {
+                "key": "sales_horizon_days",
+                "value": "180",
+                "description": "Maximum advance purchase horizon",
+            },
+            {
                 "key": "cancellation_cutoff_hours",
                 "value": "24",
                 "description": "Cancellation deadline",
@@ -130,6 +136,16 @@ def seed_parameters(session: Session) -> None:
             },
         ],
         ["key"],
+    )
+    _upsert(
+        session,
+        DemoIdentity.__table__,
+        [
+            {"id": "demo-passenger", "role": "PASSENGER", "agency_id": None, "active": True},
+            {"id": "demo-admin", "role": "ADMIN", "agency_id": None, "active": True},
+            {"id": "demo-airport", "role": "AIRPORT", "agency_id": None, "active": True},
+        ],
+        ["id"],
     )
     _upsert(
         session,
@@ -158,6 +174,12 @@ def seed_demo(session: Session) -> None:
         session,
         Agent.__table__,
         [{"id": "agent-7", "agency_id": "agency-1", "display_name": "Demo Agent", "active": True}],
+        ["id"],
+    )
+    _upsert(
+        session,
+        DemoIdentity.__table__,
+        [{"id": "agent-7", "role": "AGENCY_AGENT", "agency_id": "agency-1", "active": True}],
         ["id"],
     )
     _upsert(

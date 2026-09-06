@@ -23,6 +23,19 @@ def advance_multiplier(departure: datetime, now: datetime) -> Decimal:
     return Decimal("1.25")
 
 
+def configured_advance_multiplier(
+    departure: datetime,
+    now: datetime,
+    bands: tuple[Decimal, Decimal, Decimal],
+) -> Decimal:
+    days = (departure - now).total_seconds() / 86400
+    if days > 30:
+        return bands[0]
+    if days >= 7:
+        return bands[1]
+    return bands[2]
+
+
 @dataclass(frozen=True, slots=True)
 class PriceSnapshot:
     base_fare: Decimal
@@ -41,12 +54,20 @@ def price(
     departure: datetime,
     now: datetime,
     agency: bool = False,
+    advance_bands: tuple[Decimal, Decimal, Decimal] | None = None,
+    business_multiplier: Decimal = BUSINESS_MULTIPLIER,
+    tax_rate: Decimal = TAX_RATE,
+    commission_rate: Decimal = AGENCY_COMMISSION_RATE,
 ) -> PriceSnapshot:
-    advance = advance_multiplier(departure, now)
-    cabin_multiplier = BUSINESS_MULTIPLIER if cabin == Cabin.BUSINESS else Decimal(1)
+    advance = (
+        advance_multiplier(departure, now)
+        if advance_bands is None
+        else configured_advance_multiplier(departure, now, advance_bands)
+    )
+    cabin_multiplier = business_multiplier if cabin == Cabin.BUSINESS else Decimal(1)
     fare = money(base_fare * advance * cabin_multiplier)
     fee = money(airport_fee)
-    tax = money((fare + fee) * TAX_RATE)
+    tax = money((fare + fee) * tax_rate)
     return PriceSnapshot(
         money(base_fare),
         advance,
@@ -54,5 +75,5 @@ def price(
         fee,
         tax,
         money(fare + fee + tax),
-        money(fare * AGENCY_COMMISSION_RATE) if agency else Decimal("0.00"),
+        money(fare * commission_rate) if agency else Decimal("0.00"),
     )

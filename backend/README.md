@@ -1,6 +1,6 @@
-# Airline core engine
+# Airline OLTP MVP
 
-Transactional, HTTP-independent reservation engine for the course MVP. Python 3.12, SQLAlchemy 2.x and PostgreSQL 16 are the supported path. SQLite is deliberately unsupported because it cannot demonstrate `SELECT ... FOR UPDATE` semantics.
+Transactional reservation engine and versioned FastAPI adapter for the course MVP. Python 3.12, SQLAlchemy 2.x and PostgreSQL 16 are the supported path. SQLite is deliberately unsupported because it cannot demonstrate `SELECT ... FOR UPDATE` semantics.
 
 ## Run locally
 
@@ -9,22 +9,34 @@ cd backend
 python3 -m pip install -e '.[dev]'
 docker compose up -d
 export DATABASE_URL='postgresql+psycopg://airline:airline_local_only@localhost:54329/airline'
-python3 -m airline_core.persistence.bootstrap
+python3 -m airline_core.persistence.bootstrap --with-demo-data
 PYTHONPATH=. python3 -m pytest -q
+uvicorn airline_core.main:app --host 127.0.0.1 --port 8000
 ```
+
+The last command starts the server and remains in the foreground; run it after the tests or in a separate terminal.
 
 The local-only container exposes PostgreSQL on `localhost:54329`. Its credentials are intentionally development values in `docker-compose.yml`, not AWS or production credentials. Set `DATABASE_URL` to point tests/services at another PostgreSQL database if needed.
 
 ## Design boundaries
 
 - `airline_core/domain`: pure policy (money, itinerary, lifecycle and stable domain errors).
-- `airline_core/application`: `BookingService`, a synchronous transaction-oriented façade suitable for a later FastAPI adapter.
+- `airline_core/application`: `BookingService` and database-backed runtime policy.
 - `airline_core/persistence`: SQLAlchemy mappings, database session factory and deterministic seed data.
-- `alembic`: the only DDL authority. `0001` is an explicit historical snapshot; `0002` and `0003` are forward migrations.
+- `airline_core/api.py`: typed `/api/v1` adapter, one SQLAlchemy transaction per request, stable errors and demo authorization.
+- `alembic`: the only DDL authority. `0001` is an explicit historical snapshot and `0002`–`0005` are forward migrations.
 
 `BookingService.create` locks each requested `Inventory` row with PostgreSQL `FOR UPDATE`, ordered by `(flight_leg_instance_id, cabin)`, rechecks capacity, then holds seats and inventory atomically. A partial unique index prevents simultaneous active assignment of the same physical seat for a leg. Released rows retain history, so a seat can be reused later.
 
-All timestamps are UTC (`timestamptz`); airport records carry IANA zones. Monetary fields are `NUMERIC(14,2)` and pricing uses `Decimal` with `ROUND_HALF_UP`. Holds are sixty minutes. Operations call `expire_due` as part of booking, so correctness does not depend on an external scheduler; a scheduler may invoke the same method as cleanup.
+All stored timestamps are UTC (`timestamptz`); airport records carry IANA zones and the API returns UTC plus local schedules. Monetary fields are `NUMERIC(14,2)` and pricing uses `Decimal` with `ROUND_HALF_UP`. Hold, quote, sale, cancellation, refund, fare, tax and commission rules are loaded from the seeded operational catalogs. Operations call `expire_due` during booking and search, and administration exposes the same cleanup operation, so correctness does not depend on a scheduler.
+
+`idempotency_records` is authoritative for reservation replay during its 24-hour window. The similarly named reservation columns remain immutable request evidence for migration compatibility. Payments use their unique synthetic operation reference. See ADR-0003 for the complete decision.
+
+## HTTP demo
+
+Open `http://127.0.0.1:8000/` for the same-origin static client. OpenAPI is at `/docs` and the database healthcheck at `/api/v1/health`. The public workflow covers search, hold, lookup by locator plus surname, simulated payment, tickets/coupons, cancellation and expiration. Typed admin endpoints expose inventory, reservations, audit, settings, fare rules, airports, agencies and agents.
+
+Default passenger requests use the persisted `demo-passenger` identity. Privileged demo calls must provide registered, active identities: `demo-admin`/`ADMIN`, `demo-airport`/`AIRPORT`, or `agent-7`/`AGENCY_AGENT` with `X-Demo-Agency-Id: agency-1`. These headers are deliberately demo-only and are not production authentication.
 
 ## Database bootstrap and operation
 
@@ -53,6 +65,6 @@ AIRLINE_CONCURRENCY_ITERATIONS=30 python3 -m pytest -q -m concurrency
 
 The concurrent test uses independent PostgreSQL sessions and a barrier. It asserts exactly one winner, 19 inventory conflicts, zero remaining availability on the bottleneck, no duplicate physical seat and no partial reservation. It is intentionally configurable because the full 1,200-request profile can be slow in constrained CI.
 
-## Limits intentionally left to later layers
+## Limits intentionally outside this MVP
 
-There is no HTTP API, authentication, real payment gateway/card data, AWS/IAM/ETL, visual seat selection, partial cancellation, or flight change. Payment input accepts only simulated boolean approval and a synthetic operation reference; it stores no PAN/CVV. Administrative CRUD/search/manifest endpoints should call this model through a future adapter.
+There is no production authentication, resource-level authorization, real payment gateway/card data, OLAP/ETL, visual seat selection, partial cancellation, check-in, baggage, notification or flight change. Payment input accepts only simulated boolean approval and a synthetic operation reference; it stores no PAN/CVV. The AWS artifacts are deployment-ready but this repository preparation does not create AWS or IAM resources.

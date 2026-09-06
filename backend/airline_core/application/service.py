@@ -13,6 +13,7 @@ from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from airline_core.application.policy import load_policy
 from airline_core.domain.errors import (
     IdempotencyKeyReused,
     InventoryUnavailable,
@@ -23,7 +24,6 @@ from airline_core.domain.errors import (
 from airline_core.domain.itinerary import SegmentTime, validate_itinerary
 from airline_core.domain.pricing import price
 from airline_core.domain.state import (
-    HOLD,
     require_approval,
     require_cancellation,
     validate_sale,
@@ -37,11 +37,14 @@ from airline_core.domain.types import (
     TicketState,
 )
 from airline_core.persistence.models import (
+    Agency,
+    Agent,
     Aircraft,
     AuditEvent,
     Coupon,
     FlightInstance,
     FlightLegInstance,
+    IdempotencyRecord,
     Inventory,
     Itinerary,
     ItinerarySegment,
@@ -194,31 +197,51 @@ class BookingService:
         return len(expired)
 
     def create(self, command: CreateReservation) -> Reservation:
+        policy = load_policy(self.s)
         if not command.idempotency_key:
             raise ValidationError("idempotency key required")
         if not 1 <= len(command.passengers) <= 9:
             raise ValidationError("1 to 9 passengers required")
         if command.channel is Channel.AGENCY and not (command.agency_id and command.agent_id):
             raise ValidationError("agency attribution required")
+        if command.channel is Channel.AGENCY:
+            agency = self.s.scalar(
+                select(Agency).where(Agency.id == command.agency_id, Agency.active.is_(True))
+            )
+            agent = self.s.scalar(
+                select(Agent).where(Agent.id == command.agent_id, Agent.active.is_(True))
+            )
+            if agency is None or agent is None or agent.agency_id != command.agency_id:
+                raise ValidationError("active agency and matching agent required")
         digest = fingerprint(command)
         # PostgreSQL transaction advisory lock serializes an otherwise absent idempotency row.
         # The inventory locks below still remain the authority for capacity.
         lock_key = f"{command.actor_id}|{command.channel}|{command.idempotency_key}"
         self.s.execute(select(func.pg_advisory_xact_lock(func.hashtext(lock_key))))
-        prior = self.s.scalar(
-            select(Reservation)
+        record = self.s.scalar(
+            select(IdempotencyRecord)
             .where(
-                Reservation.actor_id == command.actor_id,
-                Reservation.channel == command.channel,
-                Reservation.idempotency_key == command.idempotency_key,
-                Reservation.created_at >= self.clock() - timedelta(hours=24),
+                IdempotencyRecord.scope == "reservation",
+                IdempotencyRecord.actor_id == command.actor_id,
+                IdempotencyRecord.idempotency_key == command.idempotency_key,
+                IdempotencyRecord.expires_at >= self.clock(),
             )
-            .order_by(Reservation.created_at.desc())
+            .with_for_update()
         )
-        if prior:
-            if prior.payload_hash != digest:
+        if record:
+            if record.payload_hash != digest:
                 raise IdempotencyKeyReused("Idempotency key has another payload")
-            return prior
+            return self._reservation(record.resource_id, lock=False)
+        stale = self.s.scalar(
+            select(IdempotencyRecord).where(
+                IdempotencyRecord.scope == "reservation",
+                IdempotencyRecord.actor_id == command.actor_id,
+                IdempotencyRecord.idempotency_key == command.idempotency_key,
+            )
+        )
+        if stale is not None:
+            self.s.delete(stale)
+            self.s.flush()
         self.expire_due(correlation=command.correlation_id)
         legs = list(
             self.s.scalars(
@@ -232,7 +255,12 @@ class BookingService:
         validate_itinerary(
             [SegmentTime(x.origin, x.destination, x.departure_at, x.arrival_at) for x in ordered]
         )
-        validate_sale(ordered[0].departure_at, self.clock())
+        validate_sale(
+            ordered[0].departure_at,
+            self.clock(),
+            timedelta(minutes=policy.sales_cutoff_minutes),
+            timedelta(days=policy.sales_horizon_days),
+        )
         # Canonical lock order is independent of customer itinerary order.
         inventories = list(
             self.s.scalars(
@@ -275,7 +303,7 @@ class BookingService:
             actor_id=command.actor_id,
             agency_id=command.agency_id,
             agent_id=command.agent_id,
-            expires_at=self.clock() + HOLD,
+            expires_at=self.clock() + timedelta(minutes=policy.hold_minutes),
             idempotency_key=command.idempotency_key,
             idempotency_scope=f"{command.idempotency_key}:{secrets.token_hex(12)}",
             payload_hash=digest,
@@ -332,6 +360,10 @@ class BookingService:
                 leg.departure_at,
                 self.clock(),
                 command.channel == Channel.AGENCY,
+                (policy.advance_gt_30, policy.advance_7_to_30, policy.advance_lt_7),
+                policy.business_multiplier,
+                policy.tax_rate,
+                policy.commission_rate,
             )
             for passenger, seat in zip(passengers, seats):
                 self.s.add(
@@ -377,6 +409,18 @@ class BookingService:
             self.s.flush()
         except IntegrityError as error:
             raise InventoryUnavailable("Concurrent seat assignment conflict") from error
+        self.s.add(
+            IdempotencyRecord(
+                scope="reservation",
+                actor_id=command.actor_id,
+                idempotency_key=command.idempotency_key,
+                payload_hash=digest,
+                resource_type="reservation",
+                resource_id=r.id,
+                expires_at=self.clock() + timedelta(hours=24),
+            )
+        )
+        self.s.flush()
         return r
 
     def process_payment(
@@ -387,10 +431,20 @@ class BookingService:
         actor: str = "payment",
         correlation: str = "payment",
     ) -> Payment:
+        self.s.execute(
+            select(func.pg_advisory_xact_lock(func.hashtext(f"payment:{operation_reference}")))
+        )
         existing = self.s.scalar(
             select(Payment).where(Payment.operation_reference == operation_reference)
         )
         if existing:
+            if (
+                existing.reservation_id != reservation_id
+                or (existing.state == PaymentState.APPROVED) != approved
+            ):
+                raise IdempotencyKeyReused(
+                    "Payment operation reference conflicts with existing operation"
+                )
             return existing
         r = self._reservation(reservation_id)
         if approved:
@@ -502,7 +556,10 @@ class BookingService:
         )
         if first is None:
             raise NotFoundError("Reservation itinerary missing")
-        require_cancellation(r.state, first, self.clock())
+        policy = load_policy(self.s)
+        require_cancellation(
+            r.state, first, self.clock(), timedelta(hours=policy.cancellation_cutoff_hours)
+        )
         old = r.state
         if r.state == ReservationState.CONFIRMED:
             self._release(r, actor, "cancelled", correlation)
@@ -516,7 +573,7 @@ class BookingService:
                 reservation_id=r.id,
                 operation_reference=f"refund:{r.id}",
                 state=PaymentState.REFUNDED,
-                amount=(r.total * Decimal("0.90")).quantize(Decimal("0.01")),
+                amount=(r.total * policy.refund_percent / Decimal(100)).quantize(Decimal("0.01")),
             )
             self.s.add(refund_payment)
             self.s.flush()
