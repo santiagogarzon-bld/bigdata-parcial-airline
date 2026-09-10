@@ -21,7 +21,13 @@ class Loader(yaml.SafeLoader): pass
 Loader.add_multi_constructor('!', lambda loader, suffix, node: loader.construct_object(node))
 yaml.compose(Path(sys.argv[1]).read_text(), Loader=Loader)
 PY
-if command -v aws >/dev/null 2>&1 && [[ -n "${AWS_DEFAULT_REGION:-}" ]]; then
-  aws cloudformation validate-template --template-body "file://${TEMPLATE}" --region "${AWS_DEFAULT_REGION}" >/dev/null
+if command -v aws >/dev/null 2>&1 && [[ -n "${AWS_REGION:-${AWS_DEFAULT_REGION:-}}" ]]; then
+  aws_args=(--region "${AWS_REGION:-${AWS_DEFAULT_REGION}}")
+  if [[ -n "${AWS_PROFILE:-}" ]]; then
+    aws_args+=(--profile "${AWS_PROFILE}")
+  fi
+  aws cloudformation validate-template \
+    --template-body "file://${TEMPLATE}" \
+    "${aws_args[@]}" >/dev/null
 fi
 echo 'infrastructure validation passed'
