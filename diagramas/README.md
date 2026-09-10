@@ -17,8 +17,8 @@ fuente y no deben editarse directamente.
 - Morado discontinuo: programación, invocación o dependencia administrada.
 - Rosa discontinuo: control, metadatos o ruta de error.
 - Verde: datos analíticos publicados correctamente.
-- Los marcos grises representan límites lógicos; no implican por sí solos una
-  nueva cuenta, VPC o base física.
+- Los cilindros RDS separados representan instancias físicas distintas; los
+  marcos grises restantes representan límites lógicos o de servicio.
 
 La documentación de ingeniería de datos que explica decisiones, grano,
 operación y controles está en
