@@ -12,8 +12,13 @@ GLUE_ROLE_ARN="${GLUE_ROLE_ARN:-}"
 ANALYTICS_SCRIPT_KEY="${ANALYTICS_SCRIPT_KEY:-etl/analytics_job.py}"
 ANALYTICS_TEMP_PREFIX="${ANALYTICS_TEMP_PREFIX:-glue-temp/}"
 ANALYTICS_ETL_FILE="${ANALYTICS_ETL_FILE:-${ROOT_DIR}/analytics/glue_job.py}"
+OLAP_PASSWORD_INPUT="${ANALYTICS_DB_MASTER_PASSWORD:-}"
 [[ "${GLUE_ROLE_ARN}" =~ ^arn:[^:]+:iam::[0-9]{12}:role/.+$ ]] || {
   echo 'GLUE_ROLE_ARN must be the existing AWS Academy LabRole ARN' >&2
+  exit 2
+}
+[[ ${#OLAP_PASSWORD_INPUT} -ge 16 ]] || {
+  echo 'ANALYTICS_DB_MASTER_PASSWORD must contain at least 16 characters' >&2
   exit 2
 }
 [[ "${ANALYTICS_SCRIPT_KEY}" != /* && "${ANALYTICS_SCRIPT_KEY}" != */ ]] || {
@@ -42,13 +47,14 @@ chmod 600 "${PARAMETERS_FILE}"
 # are explicit, while old values (including NoEcho parameters) stay server-side.
 aws cloudformation describe-stacks "${aws_args[@]}" --stack-name "${STACK_NAME}" \
   --query 'Stacks[0].Parameters' --output json |
-  jq --arg role "${GLUE_ROLE_ARN}" --arg key "${ANALYTICS_SCRIPT_KEY}" --arg temp "${ANALYTICS_TEMP_PREFIX}" '
+  jq --arg role "${GLUE_ROLE_ARN}" --arg key "${ANALYTICS_SCRIPT_KEY}" --arg temp "${ANALYTICS_TEMP_PREFIX}" --arg analytics_password "${OLAP_PASSWORD_INPUT}" '
     map({ParameterKey: .ParameterKey, UsePreviousValue: true})
-    | map(select(.ParameterKey != "GlueRoleArn" and .ParameterKey != "AnalyticsScriptKey" and .ParameterKey != "AnalyticsTempPrefix"))
+    | map(select(.ParameterKey != "GlueRoleArn" and .ParameterKey != "AnalyticsScriptKey" and .ParameterKey != "AnalyticsTempPrefix" and .ParameterKey != "AnalyticsDBMasterPassword"))
     + [
       {ParameterKey: "GlueRoleArn", ParameterValue: $role},
       {ParameterKey: "AnalyticsScriptKey", ParameterValue: $key},
       {ParameterKey: "AnalyticsTempPrefix", ParameterValue: $temp}
+      ,{ParameterKey: "AnalyticsDBMasterPassword", ParameterValue: $analytics_password}
     ]' >"${PARAMETERS_FILE}"
 
 aws cloudformation update-stack "${aws_args[@]}" --stack-name "${STACK_NAME}" \

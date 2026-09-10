@@ -40,6 +40,21 @@ Parameters:
     Type: String
     Default: airline_oltp
     AllowedPattern: '^[a-z][a-z0-9_]{0,62}$'
+  AnalyticsDBName:
+    Type: String
+    Default: airline_analytics
+    AllowedPattern: '^[a-z][a-z0-9_]{0,62}$'
+  AnalyticsDBInstanceClass:
+    Type: String
+    Default: db.t3.micro
+    AllowedValues: [db.t3.micro, db.t3.small]
+  AnalyticsDBMasterPassword:
+    Type: String
+    NoEcho: true
+    MinLength: 16
+    MaxLength: 41
+    AllowedPattern: '^[^/@"\s]{16,41}$'
+    ConstraintDescription: Use 16-41 non-whitespace characters, excluding slash, at sign, and double quote
   AnalyticsScriptKey:
     Type: String
     Default: etl/analytics_job.py
@@ -188,9 +203,30 @@ Resources:
           FromPort: 5432
           ToPort: 5432
           SourceSecurityGroupId: {Ref: GlueSecurityGroup}
+        - IpProtocol: tcp
+          FromPort: 5432
+          ToPort: 5432
+          SourceSecurityGroupId: {Ref: AnalyticsDBSecurityGroup}
       Tags:
         - {Key: Name, Value: airline-db-sg}
         - {Key: Project, Value: airline-oltp-mvp}
+  AnalyticsDBSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Analytical PostgreSQL only from Glue and operator bastion
+      VpcId: {Ref: VPC}
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 5432
+          ToPort: 5432
+          SourceSecurityGroupId: {Ref: GlueSecurityGroup}
+        - IpProtocol: tcp
+          FromPort: 5432
+          ToPort: 5432
+          SourceSecurityGroupId: {Ref: ApiSecurityGroup}
+      Tags:
+        - {Key: Name, Value: airline-analytics-db-sg}
+        - {Key: Project, Value: airline-analytics}
   GlueSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
@@ -241,6 +277,32 @@ Resources:
       Tags:
         - {Key: Name, Value: airline-db}
         - {Key: Project, Value: airline-oltp-mvp}
+  AnalyticsDatabase:
+    Type: AWS::RDS::DBInstance
+    DeletionPolicy: Snapshot
+    UpdateReplacePolicy: Snapshot
+    Properties:
+      DBName: {Ref: AnalyticsDBName}
+      DBInstanceClass: {Ref: AnalyticsDBInstanceClass}
+      Engine: postgres
+      EngineVersion: {Ref: DBEngineVersion}
+      AllocatedStorage: '20'
+      StorageType: gp3
+      MasterUsername: {Ref: DBMasterUsername}
+      MasterUserPassword: {Ref: AnalyticsDBMasterPassword}
+      DBSubnetGroupName: {Ref: DBSubnetGroup}
+      VPCSecurityGroups: [{Ref: AnalyticsDBSecurityGroup}]
+      PubliclyAccessible: false
+      MultiAZ: false
+      MonitoringInterval: 0
+      BackupRetentionPeriod: 1
+      DeletionProtection: false
+      StorageEncrypted: true
+      AutoMinorVersionUpgrade: true
+      CopyTagsToSnapshot: true
+      Tags:
+        - {Key: Name, Value: airline-analytics-db}
+        - {Key: Project, Value: airline-analytics}
   AnalyticsArtifactsBucket:
     Type: AWS::S3::Bucket
     DeletionPolicy: Retain
@@ -294,17 +356,17 @@ Resources:
           SecurityGroupIdList: [{Ref: GlueSecurityGroup}]
   GlueAnalyticsConnection:
     Type: AWS::Glue::Connection
-    DependsOn: Database
+    DependsOn: AnalyticsDatabase
     Properties:
       CatalogId: {Ref: AWS::AccountId}
       ConnectionInput:
         Name: airline-analytics-jdbc
-        Description: JDBC connection from Glue to the analytics schema in the same RDS instance
+        Description: JDBC connection from Glue to the independent analytical RDS instance
         ConnectionType: JDBC
         ConnectionProperties:
-          JDBC_CONNECTION_URL: {Fn::Sub: 'jdbc:postgresql://${Database.Endpoint.Address}:${Database.Endpoint.Port}/${DBName}?sslmode=require'}
+          JDBC_CONNECTION_URL: {Fn::Sub: 'jdbc:postgresql://${AnalyticsDatabase.Endpoint.Address}:${AnalyticsDatabase.Endpoint.Port}/${AnalyticsDBName}?sslmode=require'}
           USERNAME: {Ref: DBMasterUsername}
-          PASSWORD: {Ref: DBMasterPassword}
+          PASSWORD: {Ref: AnalyticsDBMasterPassword}
           JDBC_ENFORCE_SSL: 'true'
         PhysicalConnectionRequirements:
           AvailabilityZone: {Fn::Select: [0, {Fn::GetAZs: ''}]}
@@ -360,7 +422,7 @@ Resources:
       Targets:
         JdbcTargets:
           - ConnectionName: airline-analytics-jdbc
-            Path: {Fn::Sub: '${DBName}/analytics/%'}
+            Path: {Fn::Sub: '${AnalyticsDBName}/analytics/%'}
       SchemaChangePolicy:
         UpdateBehavior: UPDATE_IN_DATABASE
         DeleteBehavior: DEPRECATE_IN_DATABASE
@@ -455,6 +517,9 @@ Outputs:
   DatabaseEndpoint: {Value: {Fn::GetAtt: [Database, Endpoint.Address]}}
   DatabaseIdentifier: {Value: {Ref: Database}}
   DatabasePort: {Value: {Fn::GetAtt: [Database, Endpoint.Port]}}
+  AnalyticsDatabaseEndpoint: {Value: {Fn::GetAtt: [AnalyticsDatabase, Endpoint.Address]}}
+  AnalyticsDatabaseIdentifier: {Value: {Ref: AnalyticsDatabase}}
+  AnalyticsDatabasePort: {Value: {Fn::GetAtt: [AnalyticsDatabase, Endpoint.Port]}}
   GlueSourceCatalogDatabaseName: {Value: {Ref: GlueSourceCatalogName}}
   GlueAnalyticsCatalogDatabaseName: {Value: {Ref: GlueAnalyticsCatalogName}}
   GlueAnalyticsJobName: {Value: {Ref: GlueAnalyticsJob}}

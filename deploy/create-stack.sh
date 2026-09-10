@@ -15,6 +15,8 @@ DB_INSTANCE_CLASS="${DB_INSTANCE_CLASS:-db.t3.micro}"
 DB_ENGINE_VERSION="${DB_ENGINE_VERSION:-16.10}"
 DB_NAME="${DB_NAME:-airline_oltp}"
 DB_USER="${DB_USER:-airline_admin}"
+ANALYTICS_DB_NAME="${ANALYTICS_DB_NAME:-airline_analytics}"
+ANALYTICS_DB_INSTANCE_CLASS="${ANALYTICS_DB_INSTANCE_CLASS:-db.t3.micro}"
 GLUE_ROLE_ARN="${GLUE_ROLE_ARN:-}"
 
 if [[ -f "${CONFIG_FILE}" ]]; then
@@ -48,6 +50,14 @@ if [[ "${DB_PASSWORD}" == *"/"* || "${DB_PASSWORD}" == *"@"* || "${DB_PASSWORD}"
   echo 'DB_PASSWORD cannot contain whitespace, slash, at sign, or double quote' >&2
   exit 2
 fi
+if [[ -z "${ANALYTICS_DB_PASSWORD:-}" ]]; then
+  read -rsp 'Analytical RDS master password (16-41 characters): ' ANALYTICS_DB_PASSWORD
+  echo
+fi
+[[ ${#ANALYTICS_DB_PASSWORD} -ge 16 && ${#ANALYTICS_DB_PASSWORD} -le 41 ]] || {
+  echo 'ANALYTICS_DB_PASSWORD must contain 16-41 characters' >&2
+  exit 2
+}
 
 if aws cloudformation describe-stacks --profile "${AWS_PROFILE}" --region "${AWS_REGION}" --stack-name "${STACK_NAME}" >/dev/null 2>&1; then
   echo "Stack ${STACK_NAME} already exists; this script intentionally does not update it." >&2
@@ -60,7 +70,7 @@ AWS_PROFILE="${AWS_PROFILE}" AWS_REGION="${AWS_REGION}" AMI_ID="${AMI_ID}" KEY_N
 
 command -v jq >/dev/null 2>&1 || { echo 'jq is required to encode stack parameters safely' >&2; exit 1; }
 PARAMETERS_FILE="$(mktemp)"
-trap 'rm -f "${PARAMETERS_FILE}"; unset DB_PASSWORD' EXIT
+trap 'rm -f "${PARAMETERS_FILE}"; unset DB_PASSWORD ANALYTICS_DB_PASSWORD' EXIT
 chmod 600 "${PARAMETERS_FILE}"
 jq -n \
   --arg operator "${OPERATOR_CIDR}" \
@@ -72,6 +82,9 @@ jq -n \
   --arg db_password "${DB_PASSWORD}" \
   --arg db_version "${DB_ENGINE_VERSION}" \
   --arg db_name "${DB_NAME}" \
+  --arg analytics_db_name "${ANALYTICS_DB_NAME}" \
+  --arg analytics_db_class "${ANALYTICS_DB_INSTANCE_CLASS}" \
+  --arg analytics_db_password "${ANALYTICS_DB_PASSWORD}" \
   --arg glue_role_arn "${GLUE_ROLE_ARN}" \
   '[
     {ParameterKey:"OperatorCidr",ParameterValue:$operator},
@@ -83,6 +96,9 @@ jq -n \
     {ParameterKey:"DBMasterPassword",ParameterValue:$db_password},
     {ParameterKey:"DBEngineVersion",ParameterValue:$db_version},
     {ParameterKey:"DBName",ParameterValue:$db_name},
+    {ParameterKey:"AnalyticsDBName",ParameterValue:$analytics_db_name},
+    {ParameterKey:"AnalyticsDBInstanceClass",ParameterValue:$analytics_db_class},
+    {ParameterKey:"AnalyticsDBMasterPassword",ParameterValue:$analytics_db_password},
     {ParameterKey:"GlueRoleArn",ParameterValue:$glue_role_arn}
   ]' >"${PARAMETERS_FILE}"
 
@@ -96,7 +112,7 @@ aws cloudformation create-stack \
   --tags Key=Project,Value=airline-oltp-mvp
 
 rm -f "${PARAMETERS_FILE}"
-unset DB_PASSWORD
+unset DB_PASSWORD ANALYTICS_DB_PASSWORD
 trap - EXIT
 
 aws cloudformation wait stack-create-complete \
