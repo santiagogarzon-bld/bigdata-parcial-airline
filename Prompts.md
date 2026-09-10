@@ -41,3 +41,7 @@ Usando agentes paralelos, y ya teniendo el motor de funcionamiento de la aerolin
 
 # MVP analitica
 Actúa como Arquitecto de Datos y Especialista en Cloud/AWS. Actualmente tenemos una aplicación transaccional desplegada en AWS y funcional. El siguiente paso es implementar la capa de analítica de datos. Con los requerimientos ya definidos usando modelos paralelos de gpt 5.6 luna con effort medium  implementa los gaps faltantes para llegar a la versión con analitica  con ETL's. Donde debe haber en la RDS un schema para analitica (revisa este eschema). Debes actuar como supervisor de los modelos, los commits se hacen al final cuando ya hayas validado que todo esté correcto. Ten en cuenta que por ahora solo vamos a hacer la capa de analitica de datos, es decir el data engineering, no la parte de Analisis en si mismo. El objetivo es preparar una arquitectura para que podamos hacer analitica mas adelante.
+
+
+# Scheduler ETL
+Haz que se ejecute cada hora con un scheduler.

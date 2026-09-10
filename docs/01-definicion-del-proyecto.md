@@ -175,7 +175,7 @@ Esta restricción impide aplicar plenamente mínimo privilegio. En la entrega se
 
 **Q-024 — P0. ¿Qué frescura necesita OLAP?** Opciones: carga única para demostración; bajo demanda; diaria; cada hora; casi en tiempo real. Relacionar la respuesta con el presupuesto.
 
-> **Respuesta:** Frescura objetivo de una hora. La planeación calculará el costo mensual de 24 ejecuciones diarias, pero en Learner Lab el job se ejecutará bajo demanda las veces mínimas necesarias para evidencia, debido al límite real de USD 15 adicionales.
+> **Respuesta:** Frescura objetivo de una hora. Un trigger programado de AWS Glue ejecuta el job al minuto 0 de cada hora (`cron(0 * * * ? *)`, en UTC). Para respetar el presupuesto del Learner Lab, se activa después de subir el artefacto y se desactiva cuando termina la ventana de demostración.
 
 **Q-025 — P0. ¿El profesor permite que OLTP y OLAP compartan una instancia PostgreSQL como dos bases lógicas?** Aunque reduce costo, disminuye aislamiento y puede no satisfacer la intención de “cada instancia”.
 
@@ -183,7 +183,7 @@ Esta restricción impide aplicar plenamente mínimo privilegio. En la entrega se
 
 **Q-026 — P0. ¿Se requiere un ETL con AWS Glue, o se acepta otro servicio disponible en Learner Lab?** Opciones a comparar después: Glue Spark; Lambda; script en EC2; otra. AWS DMS no aparece entre los servicios permitidos en el README suministrado.
 
-> **Respuesta:** Se utilizará AWS Glue con el `LabRole` preexistente y sin crear o modificar IAM, sujeto al spike de `iam:PassRole` y conectividad. El ETL tendrá concurrencia 1, capacidad mínima permitida y ejecución bajo demanda para el laboratorio, aunque la arquitectura objetivo documente una programación horaria.
+> **Respuesta:** Se utilizará AWS Glue con el `LabRole` preexistente y sin crear o modificar IAM, sujeto al spike de `iam:PassRole` y conectividad. El ETL tendrá concurrencia 1, capacidad mínima permitida y ejecución automática cada hora mediante un trigger `SCHEDULED`.
 
 ## 3. Definición del negocio y requisitos funcionales
 
@@ -538,11 +538,11 @@ Las respuestas deben incluir una métrica verificable y una condición de medici
 
 **Q-102. ¿Cómo se demostrará que ambas bases están catalogadas?** Ejemplos: captura/exportación de bases y tablas, schemas inferidos, ejecución de crawler y logs.
 
-> **Respuesta:** Evidencia automatizada/local del schema y ETL, más exportación sanitizada de `get-databases`, `get-tables`, estados `SUCCEEDED` de ambos crawlers y del job, y una consulta a `analytics.etl_run` con conteos y reconciliación. No se capturan contraseñas ni propiedades sensibles de las conexiones.
+> **Respuesta:** Evidencia automatizada/local del schema y ETL, más exportación sanitizada de `get-databases`, `get-tables`, estado `ACTIVATED` del trigger horario, estados `SUCCEEDED` de ambos crawlers y del job, y una consulta a `analytics.etl_run` con conteos y reconciliación. No se capturan contraseñas ni propiedades sensibles de las conexiones.
 
 **Q-103. ¿Qué dispara el ETL?** Manual, horario o evento. La opción debe corresponder a la frescura de Q-024 y al presupuesto.
 
-> **Respuesta:** Trigger Glue `ON_DEMAND` en Learner Lab para controlar costo. La arquitectura objetivo permite ejecución horaria para cumplir frescura de una hora. No se implementa evento casi en tiempo real porque las preguntas no lo requieren y multiplicaría costo/operación.
+> **Respuesta:** Trigger Glue `SCHEDULED`, activado por el script de despliegue después de subir el job, con expresión `cron(0 * * * ? *)`. Se ejecuta al minuto 0 de cada hora UTC y mantiene concurrencia máxima 1. No se implementa procesamiento casi en tiempo real porque las preguntas no lo requieren y multiplicaría costo y operación.
 
 ## 9. Verificación práctica de Learner Lab
 

@@ -24,7 +24,8 @@ una segunda instancia PostgreSQL sin cambiar el contrato dimensional.
 ```mermaid
 flowchart LR
     API[FastAPI] --> OLTP[(RDS PostgreSQL\npublic / OLTP)]
-    GLUE[AWS Glue ETL\non demand en el laboratorio] -->|JDBC privado + TLS| OLTP
+    SCHED[Glue Trigger\ncada hora, minuto 0 UTC] --> GLUE[AWS Glue ETL]
+    GLUE -->|JDBC privado + TLS| OLTP
     GLUE -->|invoca refresh versionado| OLAP[(RDS PostgreSQL\nanalytics / OLAP)]
     S3[(S3 artefactos y temporales)] --> GLUE
     GC1[Glue Catalog\nairline_oltp] -. crawler JDBC .-> OLTP
@@ -42,7 +43,7 @@ sí mismos todas las actualizaciones de estado.
 
 | ID | Condición verificable |
 |---|---|
-| NFR-AN-01 Frescura | La arquitectura objetivo permite una carga cada hora. En Learner Lab se ejecuta bajo demanda y cada evidencia registra su `source_cutoff_at`. |
+| NFR-AN-01 Frescura | Un trigger Glue activado ejecuta la carga al minuto 0 de cada hora UTC y cada corrida registra su `source_cutoff_at`. |
 | NFR-AN-02 Idempotencia | Repetir el mismo `run_id` y `snapshot_at` no duplica dimensiones, ventas, reservas, puentes ni snapshots de ocupación. |
 | NFR-AN-03 Reconciliación | Una ejecución exitosa deja diferencia `0.00 COP` entre pagos aprobados OLTP e ingreso aprobado OLAP, y entre refunds OLTP y refunds asignados OLAP. |
 | NFR-AN-04 Consistencia | La fuente se lee con aislamiento `REPEATABLE READ` y todos los hechos de una corrida se publican en una sola transacción; un fallo no deja una carga parcial marcada como exitosa. |
@@ -56,7 +57,7 @@ sí mismos todas las actualizaciones de estado.
 | Servicio o componente | Alternativa considerada | Requisito | Pilares Well-Architected y justificación |
 |---|---|---|---|
 | RDS PostgreSQL compartida, schema `analytics` | Segunda RDS PostgreSQL | FR-036, FR-038, NFR-AN-03 | **Optimización de costos** y **sostenibilidad**: reutiliza capacidad ociosa. **Excelencia operativa**: una sola migración. Sacrifica aislamiento de rendimiento y se declara como limitación académica. |
-| AWS Glue Spark, 2 workers `G.1X` | Lambda, cron en EC2 | FR-036, FR-039, NFR-AN-01 | **Excelencia operativa**: servicio ETL administrado y ejecuciones observables. **Eficiencia de rendimiento**: transformación set-based. **Costos**: ejecución bajo demanda en el laboratorio. |
+| AWS Glue Spark, 2 workers `G.1X` y trigger horario | Lambda, cron en EC2 | FR-036, FR-039, NFR-AN-01 | **Excelencia operativa**: servicio ETL administrado, scheduler declarativo y ejecuciones observables. **Eficiencia de rendimiento**: transformación set-based. **Costos**: el trigger se desactiva fuera de la ventana del laboratorio. |
 | Glue Data Catalog y dos crawlers JDBC | Metadatos manuales | FR-040 | **Excelencia operativa** y **confiabilidad**: descubrimiento reproducible y separación lógica OLTP/OLAP. Los crawlers se ejecutan solo ante cambios de schema. |
 | S3 cifrado y versionado para el job | Archivo manual en la EC2 | FR-039, NFR-AN-06 | **Confiabilidad** y **excelencia operativa**: artefacto recuperable y versionado. **Seguridad**: acceso público bloqueado y cifrado en reposo. |
 | S3 Gateway Endpoint | NAT Gateway | NFR-AN-05 | **Seguridad**, **costos** y **sostenibilidad**: tráfico privado a S3 sin NAT permanente. |
@@ -87,9 +88,12 @@ Supuestos en `us-east-1`, sin créditos ni impuestos:
 | **Total plataforma de datos** | Incluye la RDS ya utilizada por OLTP | **≈ USD 69.54** |
 | **Incremento atribuible a analítica** | Excluye RDS ya existente | **≈ USD 54.10** |
 
-Para la demostración se presupuestan cuatro corridas manuales del job y una
-corrida de cada crawler. El costo incremental estimado es aproximadamente USD
-0.62, incluyendo S3 y los mínimos de Glue, sin sumar la RDS ya desplegada.
+Para una ventana de demostración de cuatro horas se presupuestan cuatro
+corridas programadas del job y una corrida de cada crawler. El costo
+incremental estimado es aproximadamente USD 0.62, incluyendo S3 y los mínimos
+de Glue, sin sumar la RDS ya desplegada. Mantener el trigger activo todo el mes
+produce el escenario objetivo de USD 54.10 incrementales; debe desactivarse al
+terminar la práctica si el presupuesto disponible es menor.
 
 ### Escenarios 10x
 
@@ -114,7 +118,8 @@ La fase de data engineering se considera terminada cuando:
 3. La reconciliación monetaria produce diferencia cero y distingue
    `CANCELLED`, `EXPIRED` y `PAYMENT_FAILED`.
 4. CloudFormation valida sin recursos IAM, NAT, RDS pública ni JDBC sin TLS.
-5. Con una sesión Learner Lab activa, el job y ambos crawlers terminan en
-   `SUCCEEDED` y sus tablas aparecen en los dos catálogos Glue.
+5. Con una sesión Learner Lab activa, el trigger horario queda `ACTIVATED`, el
+   job y ambos crawlers terminan en `SUCCEEDED`, y sus tablas aparecen en los
+   dos catálogos Glue.
 6. Se guardan outputs sanitizados y costos de la ejecución sin credenciales ni
    PII.

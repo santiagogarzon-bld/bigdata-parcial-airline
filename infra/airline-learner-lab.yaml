@@ -398,13 +398,16 @@ Resources:
         '--source_catalog_database': {Ref: GlueSourceCatalogName}
         '--target_catalog_database': {Ref: GlueAnalyticsCatalogName}
         '--target_schema': analytics
-  GlueAnalyticsTrigger:
+  GlueAnalyticsHourlyTrigger:
     Type: AWS::Glue::Trigger
     DependsOn: GlueAnalyticsJob
     Properties:
-      Name: airline-analytics-etl-on-demand
-      Type: ON_DEMAND
-      Description: Manually started trigger for the analytics ETL job
+      Name: airline-analytics-etl-hourly
+      Type: SCHEDULED
+      Schedule: cron(0 * * * ? *)
+      # The deployment script activates it only after the Glue script exists in S3.
+      StartOnCreation: false
+      Description: Activated hourly scheduler for the analytics ETL job at minute 0 UTC
       Actions:
         - JobName: airline-analytics-etl
   ApiInstance:
@@ -455,7 +458,7 @@ Outputs:
   GlueSourceCatalogDatabaseName: {Value: {Ref: GlueSourceCatalogName}}
   GlueAnalyticsCatalogDatabaseName: {Value: {Ref: GlueAnalyticsCatalogName}}
   GlueAnalyticsJobName: {Value: {Ref: GlueAnalyticsJob}}
-  GlueAnalyticsTriggerName: {Value: {Ref: GlueAnalyticsTrigger}}
+  GlueAnalyticsTriggerName: {Value: {Ref: GlueAnalyticsHourlyTrigger}}
   AnalyticsArtifactsBucketName: {Value: {Ref: AnalyticsArtifactsBucket}}
   AnalyticsScriptS3Uri:
     Value: {Fn::Sub: 's3://${AnalyticsArtifactsBucket}/${AnalyticsScriptKey}'}

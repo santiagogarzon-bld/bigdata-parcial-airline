@@ -27,6 +27,8 @@ snapshot.
 - Ruff: sin errores y 40 archivos con formato correcto.
 - mypy estricto del backend: sin errores en 17 archivos.
 - Validación positiva y negativa de infraestructura: correcta.
+- Contrato del scheduler: trigger `SCHEDULED`, cron horario y activación segura
+  posterior a la carga del artefacto.
 - Sintaxis de todos los scripts Bash: correcta.
 - Imagen `airline-api:analytics-validation`: construida correctamente.
 - `git diff --check`: sin errores de whitespace.

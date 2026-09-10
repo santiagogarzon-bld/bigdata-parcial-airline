@@ -2,6 +2,7 @@
 set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TEMPLATE="${ROOT_DIR}/infra/airline-learner-lab.yaml"
+ANALYTICS_UPDATE_SCRIPT="${ROOT_DIR}/deploy/update-analytics-stack.sh"
 check_forbidden() {
   local file="$1"
   rg -n 'AWS::IAM::|NatGateway|MultiAZ:\s*true|MonitoringInterval:\s*[1-9]|PubliclyAccessible:\s*true' "$file" || \
@@ -13,12 +14,16 @@ fi
 if rg -n "JDBC_ENFORCE_SSL:\s*['\"]false|s3://airline-analytics-artifacts|job-bookmark-enable" "${TEMPLATE}"; then
   echo 'analytics template contains an insecure or stale Glue setting' >&2; exit 1
 fi
-for required_pattern in "Path:.*analytics/%" "FromPort: 0" "ToPort: 65535" "SourceSecurityGroupId: \{Ref: GlueSecurityGroup\}" "Connections:" "airline-oltp-jdbc" "airline-analytics-jdbc" "--source_connection_name" "--target_connection_name" "--source_catalog_database" "--target_catalog_database" "--target_schema"; do
+for required_pattern in "Path:.*analytics/%" "FromPort: 0" "ToPort: 65535" "SourceSecurityGroupId: \{Ref: GlueSecurityGroup\}" "Connections:" "airline-oltp-jdbc" "airline-analytics-jdbc" "Name: airline-analytics-etl-hourly" "Type: SCHEDULED" "Schedule: cron\(0 \* \* \* \? \*\)" "StartOnCreation: false" "--source_connection_name" "--target_connection_name" "--source_catalog_database" "--target_catalog_database" "--target_schema"; do
   if ! rg -q -- "${required_pattern}" "${TEMPLATE}"; then
     echo "missing required Glue networking/crawler setting: ${required_pattern}" >&2
     exit 1
   fi
 done
+if rg -n 'Type: ON_DEMAND|airline-analytics-etl-on-demand' "${TEMPLATE}"; then
+  echo 'analytics ETL must use the hourly scheduled trigger' >&2
+  exit 1
+fi
 if rg -n -- "--(source|target)-(connection|catalog|schema)" "${TEMPLATE}"; then
   echo 'Glue custom arguments must use underscores for getResolvedOptions' >&2
   exit 1
@@ -43,6 +48,16 @@ import yaml
 class Loader(yaml.SafeLoader): pass
 Loader.add_multi_constructor('!', lambda loader, suffix, node: loader.construct_object(node))
 yaml.compose(Path(sys.argv[1]).read_text(), Loader=Loader)
+PY
+python - "${ANALYTICS_UPDATE_SCRIPT}" <<'PY'
+import sys
+from pathlib import Path
+
+script = Path(sys.argv[1]).read_text()
+upload = script.index('aws s3 cp')
+activation = script.index('aws glue start-trigger')
+if activation <= upload:
+    raise SystemExit('hourly trigger must be activated after the ETL artifact upload')
 PY
 if command -v aws >/dev/null 2>&1 && [[ -n "${AWS_REGION:-${AWS_DEFAULT_REGION:-}}" ]]; then
   aws_args=(--region "${AWS_REGION:-${AWS_DEFAULT_REGION}}")

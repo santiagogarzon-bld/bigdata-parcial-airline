@@ -9,7 +9,7 @@ La plantilla `infra/airline-learner-lab.yaml` amplía la RDS PostgreSQL existent
 - Dos conexiones JDBC de Glue al mismo RDS: una para `public` y otra para `analytics`.
 - Un crawler bajo demanda para cada zona del catálogo.
 - Un Glue Job Spark 4.0, dos workers `G.1X` y una ejecución concurrente máxima. El job actual hace snapshot completo idempotente y no activa bookmarks JDBC.
-- Un trigger Glue `ON_DEMAND`; la periodicidad la controla el operador o una futura automatización.
+- Un trigger Glue `SCHEDULED` con `cron(0 * * * ? *)`: ejecuta el ETL al minuto 0 de cada hora UTC.
 - Security group dedicado para las ENI de Glue y una regla de entrada RDS limitada a ese grupo.
 - Un bucket S3 privado, con bloqueo de acceso público, cifrado SSE-S3 y versionado, más un S3 Gateway VPC Endpoint para usarlo sin NAT Gateway.
 
@@ -19,16 +19,16 @@ El bucket es creado con nombre único por CloudFormation (`AnalyticsArtifactsBuc
 
 1. Copiar `deploy/academy-lab.env.example` a `deploy/academy-lab.env` y sustituir el account ID de `GLUE_ROLE_ARN` por el ARN real de `LabRole`. No guardar contraseñas en ese archivo.
 2. Para un stack nuevo, ejecutar `./deploy/create-stack.sh`; CloudFormation crea el bucket privado y el job apunta al objeto `etl/analytics_job.py`. Después de crear el stack se debe ejecutar una vez `deploy/update-analytics-stack.sh` para subir ese objeto; el script acepta que el template ya esté actualizado.
-3. Para un stack ya desplegado, usar `GLUE_ROLE_ARN=arn:aws:iam::<account>:role/LabRole ./deploy/update-analytics-stack.sh`. El script preserva los parámetros existentes, actualiza el template, espera el resultado y sube `analytics/glue_job.py` con SSE-S3; no recrea la RDS ni imprime secretos. `analytics/etl.py` es el runner local y no se debe subir como entrypoint Glue.
+3. Para un stack ya desplegado, usar `GLUE_ROLE_ARN=arn:aws:iam::<account>:role/LabRole ./deploy/update-analytics-stack.sh`. El script preserva los parámetros existentes, actualiza el template, espera el resultado, sube `analytics/glue_job.py` con SSE-S3 y solo entonces activa el scheduler horario; no recrea la RDS ni imprime secretos. `analytics/etl.py` es el runner local y no se debe subir como entrypoint Glue.
 
-El script es repetible: si CloudFormation ya está actualizado, reconoce únicamente `No updates are to be performed`, omite la espera y vuelve a subir el objeto Glue. Otros errores de actualización abortan el proceso.
+El script es repetible: si CloudFormation ya está actualizado, reconoce únicamente `No updates are to be performed`, omite la espera, vuelve a subir el objeto Glue y conserva o reactiva el scheduler. Otros errores de actualización abortan el proceso.
 4. Ejecutar `./infra/validate.sh` y revisar `aws cloudformation validate-template` con el perfil del laboratorio.
 5. Construir y desplegar la imagen actualizada con el flujo existente de
    `deploy/ec2-run.sh`. Su comando de bootstrap ejecuta `alembic upgrade head`
    y crea `analytics`; el crawler no sustituye las migraciones. Antes de una
    actualización productiva se debe seguir la política de backup descrita en
    `backend/README.md`.
-6. En Glue, ejecutar primero `airline-oltp-crawler` y `airline-analytics-crawler` cuando haya tablas creadas. Iniciar después el trigger `airline-analytics-etl-on-demand`.
+6. En Glue, ejecutar primero `airline-oltp-crawler` y `airline-analytics-crawler` cuando haya tablas creadas. Confirmar después que `airline-analytics-etl-hourly` está en estado `ACTIVATED`; el script de actualización realiza esta activación.
 
 Ejemplo de actualización explícita cuando el stack ya existe:
 
@@ -49,13 +49,22 @@ aws glue get-connection --name airline-oltp-jdbc --hide-password \
   --profile academy-lab --region us-east-1
 aws glue get-crawler --name airline-analytics-crawler --profile academy-lab --region us-east-1
 aws glue start-crawler --name airline-analytics-crawler --profile academy-lab --region us-east-1
-aws glue start-trigger --name airline-analytics-etl-on-demand --profile academy-lab --region us-east-1
+aws glue get-trigger --name airline-analytics-etl-hourly \
+  --query 'Trigger.{Type:Type,State:State,Schedule:Schedule}' \
+  --profile academy-lab --region us-east-1
 ```
 
-Comprobar que el job llega a `SUCCEEDED`, que las tablas aparecen en `airline_analytics` y que la ejecución es idempotente. El job no debe exponerse a Internet: Glue usa las subredes privadas, el SG dedicado, la conexión RDS y el endpoint Gateway de S3.
+Comprobar que el trigger está `ACTIVATED`, que una corrida horaria del job llega a `SUCCEEDED`, que las tablas aparecen en `airline_analytics` y que la ejecución es idempotente. El job no debe exponerse a Internet: Glue usa las subredes privadas, el SG dedicado, la conexión RDS y el endpoint Gateway de S3.
 
 El entrypoint Glue debe leer los argumentos con guion bajo requeridos por `getResolvedOptions`: `source_connection_name`, `target_connection_name`, `source_catalog_database`, `target_catalog_database` y `target_schema`.
 
 ## Coste y operación
 
-El diseño evita NAT Gateway, endpoints Interface y una segunda RDS para el laboratorio. Crawlers y jobs son de ejecución puntual; el mayor coste recurrente sigue siendo la RDS existente. Para una frescura horaria, se puede iniciar el trigger mediante una regla externa en una fase posterior, pero no se crea aquí un scheduler ni se presume una periodicidad que el Learner Lab no necesita.
+El diseño evita NAT Gateway, endpoints Interface y una segunda RDS para el laboratorio. Los crawlers siguen bajo demanda, pero el job se ejecuta cada hora mientras el trigger permanezca activo. Para detener costos fuera de la ventana de trabajo sin eliminar infraestructura:
+
+```bash
+aws glue stop-trigger --name airline-analytics-etl-hourly \
+  --profile academy-lab --region us-east-1
+```
+
+Para reanudar la programación, ejecutar el mismo comando con `start-trigger`.

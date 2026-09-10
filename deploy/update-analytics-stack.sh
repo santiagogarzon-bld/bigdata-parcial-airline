@@ -70,4 +70,26 @@ BUCKET="$(aws cloudformation describe-stacks "${aws_args[@]}" --stack-name "${ST
 [[ -n "${BUCKET}" && "${BUCKET}" != None ]] || { echo 'analytics bucket output not found' >&2; exit 1; }
 aws s3 cp "${ANALYTICS_ETL_FILE}" "s3://${BUCKET}/${ANALYTICS_SCRIPT_KEY}" \
   "${aws_args[@]}" --sse AES256
-echo "Updated ${STACK_NAME}; uploaded ETL to s3://${BUCKET}/${ANALYTICS_SCRIPT_KEY}"
+
+# Activate the hourly schedule only after its executable exists. This avoids a
+# first scheduled run racing the artifact upload during a new stack/update.
+TRIGGER_NAME="$(aws cloudformation describe-stacks "${aws_args[@]}" --stack-name "${STACK_NAME}" \
+  --query 'Stacks[0].Outputs[?OutputKey==`GlueAnalyticsTriggerName`].OutputValue' --output text)"
+[[ -n "${TRIGGER_NAME}" && "${TRIGGER_NAME}" != None ]] || {
+  echo 'analytics trigger output not found' >&2
+  exit 1
+}
+TRIGGER_STATE="$(aws glue get-trigger "${aws_args[@]}" --name "${TRIGGER_NAME}" \
+  --query 'Trigger.State' --output text)"
+case "${TRIGGER_STATE}" in
+  ACTIVATED|ACTIVATING)
+    ;;
+  CREATED|DEACTIVATED)
+    aws glue start-trigger "${aws_args[@]}" --name "${TRIGGER_NAME}" >/dev/null
+    ;;
+  *)
+    echo "analytics trigger cannot be activated from state ${TRIGGER_STATE}" >&2
+    exit 1
+    ;;
+esac
+echo "Updated ${STACK_NAME}; uploaded ETL and activated hourly trigger ${TRIGGER_NAME}"
