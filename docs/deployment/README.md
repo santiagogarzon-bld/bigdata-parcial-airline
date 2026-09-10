@@ -70,6 +70,8 @@ Los valores `IP_PUBLICA` y `ENDPOINT_PRIVADO_RDS` aparecen en los outputs `ApiPu
 
 `deploy/simulate-users.sh` genera tráfico exclusivamente mediante la API pública. Cada usuario sintético busca disponibilidad y sigue uno de seis recorridos: abandono después de búsqueda, reserva pendiente, cancelación del hold, pago rechazado, confirmación conservada o confirmación seguida de cancelación y reembolso. También mezcla pasajeros directos y agentes, Economy y Business, uno o dos pasajeros, consultas de reserva, tickets, manifiestos y reintentos idempotentes.
 
+La explicación completa de concurrencia, condiciones de carrera, garantías transaccionales y perfiles de carga está en [docs/simulation/README.md](../simulation/README.md).
+
 Prueba pequeña:
 
 ```bash
