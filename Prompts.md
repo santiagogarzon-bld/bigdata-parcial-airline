@@ -55,3 +55,7 @@ arquitectura AWS integral de la aplicación y la capa analítica. Los diagramas
 deben usar iconos y leyendas breves sin omitir detalles importantes. Centraliza
 todos los archivos Draw.io en `diagramas/` y agrega documentación detallada de
 la capa analítica.
+
+
+# Estimación de costos
+Necesito que hagas un analisis de costos bastante riguroso de la aplicacion y el proceso de analitica, en general del repositorio y lo desplegado en AWS basado en las ejecuciones ya hechas y todo lo que ya se procesó esta semana.
