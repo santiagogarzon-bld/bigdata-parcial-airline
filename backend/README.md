@@ -73,6 +73,8 @@ refresh function; it loads reservation, passenger-segment sales and occupancy
 facts without copying passenger PII. See
 [`docs/analytics-architecture.md`](../docs/analytics-architecture.md),
 [`docs/analytics-model.md`](../docs/analytics-model.md), and
+[`docs/analytics-detailed-design.md`](../docs/analytics-detailed-design.md),
+the source and preview [diagram catalog](../diagramas/README.md), and
 [`analytics/README.md`](../analytics/README.md). Dashboards and business analysis
 remain outside this phase.
 

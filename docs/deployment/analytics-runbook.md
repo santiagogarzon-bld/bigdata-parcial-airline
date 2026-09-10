@@ -1,5 +1,9 @@
 # Capa analítica en AWS Academy
 
+La arquitectura, el modelo, los controles y los diagramas se explican de forma
+consolidada en el
+[Diseño detallado de la capa analítica](../analytics-detailed-design.md).
+
 La plantilla `infra/airline-learner-lab.yaml` amplía la RDS PostgreSQL existente con la infraestructura de data engineering. No crea una segunda instancia RDS ni recursos `AWS::IAM::*`: el OLTP y el modelo analítico viven en la misma base (`DBName`), separados por el schema `analytics`, que debe ser creado por el DDL del modelo antes de ejecutar el crawler.
 
 ## Recursos incluidos

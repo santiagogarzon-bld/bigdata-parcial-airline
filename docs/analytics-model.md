@@ -1,5 +1,9 @@
 # Modelo de datos analítico
 
+Este documento define el modelo lógico. Para el flujo completo, controles,
+operación AWS y diagramas, consulte el
+[Diseño detallado de la capa analítica](analytics-detailed-design.md).
+
 Las migraciones `backend/alembic/versions/0006_analytics_schema.py` y
 `0007_analytics_refresh.py` crean el schema
 `analytics` dentro de la misma instancia PostgreSQL de la aplicación. Es una

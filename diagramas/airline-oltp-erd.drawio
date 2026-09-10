@@ -1,4 +1,4 @@
-<mxfile host="65bd71144e">
+<mxfile host="65bd71144e" version="31.3.2">
     <diagram id="autolayout" name="Page-1">
         <mxGraphModel dx="652" dy="648" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
             <root>
@@ -292,25 +292,10 @@
                     </mxGeometry>
                 </mxCell>
                 <mxCell id="e22" value="ticket_id" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;fontSize=11;labelBackgroundColor=#ffffff;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;exitX=1;exitY=0.333333;exitDx=0;exitDy=0;" parent="1" source="coupons" target="tickets" edge="1">
-                    <mxGeometry relative="1" as="geometry">
-                        <Array as="points">
-                            <mxPoint x="260" y="1707"/>
-                            <mxPoint x="260" y="1510"/>
-                            <mxPoint x="530" y="1510"/>
-                            <mxPoint x="530" y="1385"/>
-                        </Array>
-                    </mxGeometry>
+                    <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
                 <mxCell id="e23" value="flight_leg_instance_id" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;fontSize=11;labelBackgroundColor=#ffffff;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;exitX=1;exitY=0.666667;exitDx=0;exitDy=0;entryX=0;entryY=0.6;entryDx=0;entryDy=0;" parent="1" source="coupons" target="flight_leg_instances" edge="1">
-                    <mxGeometry relative="1" as="geometry">
-                        <Array as="points">
-                            <mxPoint x="560" y="1770"/>
-                            <mxPoint x="870" y="1770"/>
-                            <mxPoint x="870" y="1770"/>
-                            <mxPoint x="870" y="1770"/>
-                            <mxPoint x="870" y="1780"/>
-                        </Array>
-                    </mxGeometry>
+                    <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
                 <mxCell id="e24" value="flight_leg_instance_id" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;fontSize=11;labelBackgroundColor=#ffffff;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;entryX=0;entryY=0.8;entryDx=0;entryDy=0;" parent="1" source="inventories" target="flight_leg_instances" edge="1">
                     <mxGeometry relative="1" as="geometry">

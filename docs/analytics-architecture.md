@@ -1,5 +1,9 @@
 # Arquitectura de ingeniería de datos
 
+La vista consolidada, el flujo ETL y el flujo de datos están documentados en
+[Diseño detallado de la capa analítica](analytics-detailed-design.md) y en el
+[catálogo de diagramas](../diagramas/README.md).
+
 ## Alcance
 
 Esta fase prepara datos confiables para análisis posteriores. Incluye el modelo

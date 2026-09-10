@@ -45,3 +45,13 @@ Actúa como Arquitecto de Datos y Especialista en Cloud/AWS. Actualmente tenemos
 
 # Scheduler ETL
 Haz que se ejecute cada hora con un scheduler.
+
+
+# Diagramas y documentación analítica
+
+Usando la skill `/home/nuvu-pc-n4gx/.claude/skills/drawio-skill`, crea un
+diagrama simple y minimalista del flujo ETL, otro del flujo de datos y una
+arquitectura AWS integral de la aplicación y la capa analítica. Los diagramas
+deben usar iconos y leyendas breves sin omitir detalles importantes. Centraliza
+todos los archivos Draw.io en `diagramas/` y agrega documentación detallada de
+la capa analítica.
