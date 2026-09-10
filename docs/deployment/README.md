@@ -10,7 +10,7 @@ Los valores no secretos están en `deploy/academy-lab.env.example`:
 
 - perfil `academy-lab`, región `us-east-1`;
 - Amazon Linux 2023 x86_64 `ami-0b5358cc8c5df0b02`, publicada el 9 de septiembre de 2026;
-- llave EC2 existente `vockey`;
+- llave EC2 dedicada `airline-demo-key` (privada local en `~/.ssh/airline-demo-key`);
 - EC2 `t3.micro`;
 - RDS PostgreSQL `16.10`, `db.t3.micro`, 20 GB gp3.
 
@@ -45,7 +45,7 @@ Cuando decidas desplegar:
 El script obtiene el IPv4 público actual del operador, pide la contraseña RDS sin mostrarla, repite el preflight, crea el stack y espera sus outputs. También acepta variables explícitas:
 
 ```bash
-OPERATOR_CIDR=203.0.113.10/32 KEY_NAME=vockey ./deploy/create-stack.sh
+OPERATOR_CIDR=203.0.113.10/32 KEY_NAME=airline-demo-key ./deploy/create-stack.sh
 ```
 
 La contraseña viaja mediante un archivo temporal con modo `0600`, eliminado al terminar. CloudFormation marca el parámetro como `NoEcho`; se evita Secrets Manager por permisos y coste del Learner Lab.

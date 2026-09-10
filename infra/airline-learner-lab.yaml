@@ -7,7 +7,7 @@ Parameters:
     AllowedPattern: '^([0-9]{1,3}\.){3}[0-9]{1,3}/32$'
   KeyName:
     Type: AWS::EC2::KeyPair::KeyName
-    Default: vockey
+    Default: airline-demo-key
     Description: Existing EC2 key pair used for SSH; the stack never creates or changes keys
   AmiId:
     Type: AWS::EC2::Image::Id
