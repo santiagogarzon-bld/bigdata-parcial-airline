@@ -1,13 +1,13 @@
 """Idempotent operational catalogs and separately opt-in synthetic demo data."""
 
-from datetime import timedelta
+from datetime import date, datetime, time, timedelta
 from decimal import Decimal
+from zoneinfo import ZoneInfo
 
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
-from airline_core.application.service import now_utc
 from airline_core.domain.types import Cabin, FlightState
 
 from .models import (
@@ -31,6 +31,9 @@ from .models import (
 
 DEMO_CAPACITY = {Cabin.ECONOMY: 150, Cabin.BUSINESS: 12}
 SEAT_LETTERS = "ABCDEF"
+DEMO_START_DATE = date(2026, 9, 11)
+DEMO_END_DATE = date(2026, 9, 20)
+BOGOTA = ZoneInfo("America/Bogota")
 
 
 def _upsert(
@@ -68,18 +71,144 @@ def _ensure_demo_seats(session: Session, plane: Aircraft) -> None:
     session.flush()
 
 
-def _refresh_demo_inventory(session: Session, plane: Aircraft) -> None:
-    inventories = session.scalars(
-        select(Inventory)
-        .join(
-            FlightLegInstance,
-            FlightLegInstance.id == Inventory.flight_leg_instance_id,
+def _aircraft(session: Session, code: str, type_id: str) -> Aircraft:
+    plane = session.scalar(select(Aircraft).where(Aircraft.code == code))
+    if plane is None:
+        plane = Aircraft(code=code, aircraft_type_id=type_id, active=True)
+        session.add(plane)
+        session.flush()
+    else:
+        plane.aircraft_type_id = type_id
+        plane.active = True
+    _ensure_demo_seats(session, plane)
+    return plane
+
+
+def _scheduled_flight(
+    session: Session,
+    number: str,
+    route_id: str,
+) -> ScheduledFlight:
+    flight = session.scalar(select(ScheduledFlight).where(ScheduledFlight.number == number))
+    if flight is None:
+        flight = ScheduledFlight(number=number, route_id=route_id, active=True)
+        session.add(flight)
+        session.flush()
+    else:
+        flight.route_id = route_id
+        flight.active = True
+    return flight
+
+
+def _scheduled_leg(
+    session: Session,
+    flight: ScheduledFlight,
+    sequence: int,
+    origin: str,
+    destination: str,
+    base_economy: int,
+    base_business: int,
+    airport_fee: int,
+) -> ScheduledLeg:
+    leg = session.scalar(
+        select(ScheduledLeg).where(
+            ScheduledLeg.scheduled_flight_id == flight.id,
+            ScheduledLeg.sequence == sequence,
         )
-        .join(FlightInstance, FlightInstance.id == FlightLegInstance.flight_instance_id)
-        .where(FlightInstance.aircraft_id == plane.id)
     )
-    for inventory in inventories:
-        inventory.capacity = DEMO_CAPACITY[Cabin(str(inventory.cabin))]
+    if leg is None:
+        leg = ScheduledLeg(scheduled_flight_id=flight.id, sequence=sequence)
+        session.add(leg)
+    leg.origin = origin
+    leg.destination = destination
+    leg.base_economy = Decimal(base_economy)
+    leg.base_business = Decimal(base_business)
+    leg.airport_fee = Decimal(airport_fee)
+    session.flush()
+    return leg
+
+
+def _flight_instance(
+    session: Session,
+    flight: ScheduledFlight,
+    plane: Aircraft,
+    service_date: date,
+) -> FlightInstance:
+    instance = session.scalar(
+        select(FlightInstance).where(
+            FlightInstance.scheduled_flight_id == flight.id,
+            FlightInstance.service_date == service_date.isoformat(),
+        )
+    )
+    if instance is None:
+        instance = FlightInstance(
+            scheduled_flight_id=flight.id,
+            aircraft_id=plane.id,
+            service_date=service_date.isoformat(),
+            state=FlightState.SCHEDULED,
+        )
+        session.add(instance)
+        session.flush()
+    elif instance.state == FlightState.SCHEDULED:
+        instance.aircraft_id = plane.id
+    return instance
+
+
+def _leg_instance(
+    session: Session,
+    flight_instance: FlightInstance,
+    scheduled_leg: ScheduledLeg,
+    sequence: int,
+    service_date: date,
+    departure: time,
+    arrival: time,
+) -> FlightLegInstance:
+    instance = session.scalar(
+        select(FlightLegInstance).where(
+            FlightLegInstance.flight_instance_id == flight_instance.id,
+            FlightLegInstance.sequence == sequence,
+        )
+    )
+    departure_at = datetime.combine(service_date, departure, BOGOTA)
+    arrival_at = datetime.combine(service_date, arrival, BOGOTA)
+    if instance is None:
+        instance = FlightLegInstance(
+            flight_instance_id=flight_instance.id,
+            scheduled_leg_id=scheduled_leg.id,
+            sequence=sequence,
+            origin=scheduled_leg.origin,
+            destination=scheduled_leg.destination,
+            departure_at=departure_at,
+            arrival_at=arrival_at,
+        )
+        session.add(instance)
+        session.flush()
+    elif flight_instance.state == FlightState.SCHEDULED:
+        instance.scheduled_leg_id = scheduled_leg.id
+        instance.origin = scheduled_leg.origin
+        instance.destination = scheduled_leg.destination
+        instance.departure_at = departure_at
+        instance.arrival_at = arrival_at
+    for cabin, capacity in DEMO_CAPACITY.items():
+        inventory = session.scalar(
+            select(Inventory).where(
+                Inventory.flight_leg_instance_id == instance.id,
+                Inventory.cabin == cabin,
+            )
+        )
+        if inventory is None:
+            session.add(
+                Inventory(
+                    flight_leg_instance_id=instance.id,
+                    cabin=cabin,
+                    capacity=capacity,
+                    held=0,
+                    confirmed=0,
+                )
+            )
+        else:
+            inventory.capacity = capacity
+    return instance
 
 
 def seed_parameters(session: Session) -> None:
@@ -201,13 +330,8 @@ def seed_parameters(session: Session) -> None:
 
 
 def seed_demo(session: Session) -> None:
-    """Synthetic BOG-MDE direct and BOG-MDE-CLO connection; safe to rerun in dev/test."""
+    """Daily, non-overlapping synthetic rotations through 20 September 2026."""
     seed_parameters(session)
-    existing_plane = session.scalar(select(Aircraft).where(Aircraft.code == "DEMO-A320"))
-    if existing_plane is not None:
-        _ensure_demo_seats(session, existing_plane)
-        _refresh_demo_inventory(session, existing_plane)
-        return
     type_id = session.scalar(select(AircraftType.id).where(AircraftType.code == "A320-200"))
     assert type_id is not None
     _upsert(
@@ -233,107 +357,90 @@ def seed_demo(session: Session) -> None:
         Route.__table__,
         [
             {"code": "BOG-MDE", "origin": "BOG", "destination": "MDE", "active": True},
+            {"code": "MDE-BOG", "origin": "MDE", "destination": "BOG", "active": True},
+            {"code": "BOG-CLO", "origin": "BOG", "destination": "CLO", "active": True},
             {"code": "MDE-CLO", "origin": "MDE", "destination": "CLO", "active": True},
+            {"code": "CLO-BOG", "origin": "CLO", "destination": "BOG", "active": True},
         ],
         ["code"],
     )
     session.flush()
-    route_id = session.scalar(select(Route.id).where(Route.code == "BOG-MDE"))
-    assert route_id is not None
-    plane = Aircraft(code="DEMO-A320", aircraft_type_id=type_id, active=True)
-    session.add(plane)
-    session.flush()
-    _ensure_demo_seats(session, plane)
-    direct, connection = (
-        ScheduledFlight(number="DE100", route_id=route_id, active=True),
-        ScheduledFlight(number="DE200", route_id=route_id, active=True),
-    )
-    session.add_all([direct, connection])
-    session.flush()
-    spec = [
-        (direct, 1, "BOG", "MDE", 180000, 300000, 22000),
-        (connection, 1, "BOG", "MDE", 170000, 290000, 22000),
-        (connection, 2, "MDE", "CLO", 160000, 280000, 18000),
-    ]
-    legs = [
-        ScheduledLeg(
-            scheduled_flight_id=f.id,
-            sequence=n,
-            origin=o,
-            destination=d,
-            base_economy=e,
-            base_business=b,
-            airport_fee=fee,
+    legacy_plane = session.scalar(select(Aircraft).where(Aircraft.code == "DEMO-A320"))
+    if legacy_plane is not None:
+        legacy_plane.code = "DEMO-A320-01"
+        session.flush()
+    plane_1 = _aircraft(session, "DEMO-A320-01", type_id)
+    plane_2 = _aircraft(session, "DEMO-A320-02", type_id)
+    routes = {
+        route.code: route.id
+        for route in session.scalars(
+            select(Route).where(Route.code.in_(["BOG-MDE", "MDE-BOG", "BOG-CLO", "CLO-BOG"]))
         )
-        for f, n, o, d, e, b, fee in spec
-    ]
-    session.add_all(legs)
-    session.flush()
-    start = now_utc().replace(minute=0, second=0, microsecond=0) + timedelta(days=10)
-    direct_i = FlightInstance(
-        scheduled_flight_id=direct.id,
-        aircraft_id=plane.id,
-        service_date=str(start.date()),
-        state=FlightState.SCHEDULED,
+    }
+    schedule = (
+        (
+            "DE100",
+            routes["BOG-MDE"],
+            plane_1,
+            ((1, "BOG", "MDE", time(7), time(8), 180000, 300000, 22000),),
+        ),
+        (
+            "DE101",
+            routes["MDE-BOG"],
+            plane_1,
+            ((1, "MDE", "BOG", time(9, 15), time(10, 15), 175000, 295000, 22000),),
+        ),
+        (
+            "DE200",
+            routes["BOG-CLO"],
+            plane_2,
+            (
+                (1, "BOG", "MDE", time(8), time(9), 170000, 290000, 22000),
+                (2, "MDE", "CLO", time(10), time(11), 160000, 280000, 18000),
+            ),
+        ),
+        (
+            "DE201",
+            routes["CLO-BOG"],
+            plane_2,
+            ((1, "CLO", "BOG", time(12, 15), time(13, 25), 185000, 305000, 18000),),
+        ),
     )
-    connection_i = FlightInstance(
-        scheduled_flight_id=connection.id,
-        aircraft_id=plane.id,
-        service_date=str(start.date()),
-        state=FlightState.SCHEDULED,
-    )
-    session.add_all([direct_i, connection_i])
-    session.flush()
-    instances = [
-        FlightLegInstance(
-            flight_instance_id=direct_i.id,
-            scheduled_leg_id=legs[0].id,
-            sequence=1,
-            origin="BOG",
-            destination="MDE",
-            departure_at=start,
-            arrival_at=start + timedelta(hours=1),
-        ),
-        FlightLegInstance(
-            flight_instance_id=connection_i.id,
-            scheduled_leg_id=legs[1].id,
-            sequence=1,
-            origin="BOG",
-            destination="MDE",
-            departure_at=start + timedelta(minutes=30),
-            arrival_at=start + timedelta(hours=1, minutes=30),
-        ),
-        FlightLegInstance(
-            flight_instance_id=connection_i.id,
-            scheduled_leg_id=legs[2].id,
-            sequence=2,
-            origin="MDE",
-            destination="CLO",
-            departure_at=start + timedelta(hours=2, minutes=20),
-            arrival_at=start + timedelta(hours=3, minutes=20),
-        ),
-    ]
-    session.add_all(instances)
-    session.flush()
-    for leg in instances:
-        session.add_all(
-            [
-                Inventory(
-                    flight_leg_instance_id=leg.id,
-                    cabin=Cabin.ECONOMY,
-                    capacity=DEMO_CAPACITY[Cabin.ECONOMY],
-                    held=0,
-                    confirmed=0,
-                ),
-                Inventory(
-                    flight_leg_instance_id=leg.id,
-                    cabin=Cabin.BUSINESS,
-                    capacity=DEMO_CAPACITY[Cabin.BUSINESS],
-                    held=0,
-                    confirmed=0,
-                ),
-            ]
-        )
+    service_date = DEMO_START_DATE
+    while service_date <= DEMO_END_DATE:
+        for number, route_id, plane, leg_specs in schedule:
+            flight = _scheduled_flight(session, number, route_id)
+            flight_instance = _flight_instance(session, flight, plane, service_date)
+            for (
+                sequence,
+                origin,
+                destination,
+                departure,
+                arrival,
+                economy,
+                business,
+                fee,
+            ) in leg_specs:
+                scheduled_leg = _scheduled_leg(
+                    session,
+                    flight,
+                    sequence,
+                    origin,
+                    destination,
+                    economy,
+                    business,
+                    fee,
+                )
+                _leg_instance(
+                    session,
+                    flight_instance,
+                    scheduled_leg,
+                    sequence,
+                    service_date,
+                    departure,
+                    arrival,
+                )
+        service_date += timedelta(days=1)
 
 
 seed = seed_demo  # backwards-compatible fixture name

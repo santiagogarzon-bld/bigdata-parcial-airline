@@ -2,6 +2,7 @@
 
 import os
 from concurrent.futures import ThreadPoolExecutor
+from datetime import UTC, datetime, timedelta
 from threading import Barrier
 
 import pytest
@@ -29,9 +30,22 @@ def test_last_unit_has_one_winner_20_real_postgres(pg_engine, two_segments):
             seed(s)
         with Session() as s:
             legs = list(
-                s.scalars(select(FlightLegInstance).order_by(FlightLegInstance.departure_at))
+                s.scalars(
+                    select(FlightLegInstance)
+                    .where(FlightLegInstance.departure_at > datetime.now(UTC) + timedelta(hours=25))
+                    .order_by(FlightLegInstance.departure_at)
+                )
             )
-            chosen = (legs[1].id, legs[2].id) if two_segments else (legs[0].id,)
+            assert legs
+            grouped: dict[str, list[FlightLegInstance]] = {}
+            for leg in legs:
+                grouped.setdefault(leg.flight_instance_id, []).append(leg)
+            connected = next(
+                tuple(item.id for item in sorted(group, key=lambda item: item.sequence))
+                for group in grouped.values()
+                if len(group) == 2 and group[0].destination == group[1].origin
+            )
+            chosen = connected if two_segments else (legs[0].id,)
             bottleneck = chosen[-1]
             inv = s.scalar(
                 select(Inventory).where(

@@ -71,3 +71,17 @@ Incluyendo la validación funcional del despliegue y la corrida pequeña, la API
 - 3 pendientes de pago;
 - disponibilidad mínima de 145 en Economy y 12 en Business;
 - contenedor `running healthy`.
+
+## Itinerario y simulación continua
+
+El 10 de septiembre se desplegó el calendario diario del 11 al 20 de septiembre y se conservó el histórico de 99 reservas. La verificación directa posterior al seed confirmó:
+
+- 2 aeronaves `DEMO-A320`, cada una con 150 sillas Economy y 12 Business;
+- 40 instancias de vuelo y 50 instancias de tramo;
+- 100 filas de inventario, una por tramo y cabina;
+- cero solapamientos al ordenar los tramos de cada aeronave;
+- API saludable después de reemplazar el contenedor.
+
+Se dejó `airline-simulator` ejecutándose en la misma EC2 con reinicio `unless-stopped`, llegada de usuarios cada 10–25 segundos y pausas de 5–45 segundos entre acciones. El primer escaneo descubrió las 100 combinaciones tramo/cabina y calculó 2.433 sillas objetivo sobre 8.100 disponibles: 30,04% global, con metas individuales entre 24% y 36%.
+
+En los primeros dos minutos el proceso registró búsquedas abandonadas y confirmaciones en Economy y Business. La base pasó de 99 a 106 reservas, 136 pasajeros y 10 plazas confirmadas, con una marca de auditoría real del momento de ejecución. Ambos contenedores permanecieron activos; en la muestra, la API consumía aproximadamente 63 MiB y el simulador 17 MiB.

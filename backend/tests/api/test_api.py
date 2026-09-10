@@ -105,7 +105,10 @@ def _date_for(harness: ApiHarness, origin: str = "BOG") -> str:
     with harness.sessions() as db:
         departure = db.scalar(
             select(FlightLegInstance.departure_at)
-            .where(FlightLegInstance.origin == origin)
+            .where(
+                FlightLegInstance.origin == origin,
+                FlightLegInstance.departure_at > datetime.now(UTC) + timedelta(hours=25),
+            )
             .order_by(FlightLegInstance.departure_at)
         )
     assert departure is not None

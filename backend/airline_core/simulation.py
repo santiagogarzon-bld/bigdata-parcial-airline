@@ -169,8 +169,11 @@ class Config:
     seed: int
     timeout: float
     travel_date: str
+    origin: str
     destinations: tuple[str, ...]
+    target_leg_id: str | None
     booking_retries: int
+    min_pause: float
     max_pause: float
     agency_percent: int
     business_percent: int
@@ -276,9 +279,9 @@ def discover_travel_date(client: ApiClient, search_days: int) -> str:
     raise SimulationError(f"no BOG departure with inventory found in {search_days + 1} days")
 
 
-def _pause(rng: random.Random, maximum: float) -> None:
+def _pause(rng: random.Random, minimum: float, maximum: float) -> None:
     if maximum > 0:
-        time.sleep(rng.uniform(0, maximum))
+        time.sleep(rng.uniform(minimum, maximum))
 
 
 def _identity_headers(user_number: int) -> dict[str, str]:
@@ -287,9 +290,7 @@ def _identity_headers(user_number: int) -> dict[str, str]:
 
 def _action_headers(user_number: int, reservation_headers: dict[str, str]) -> dict[str, str]:
     return {
-        key: value
-        for key, value in reservation_headers.items()
-        if key.startswith("X-Demo-")
+        key: value for key, value in reservation_headers.items() if key.startswith("X-Demo-")
     } | _identity_headers(user_number)
 
 
@@ -302,7 +303,7 @@ def simulate_user(
     rng = random.Random(config.seed + user_number * 104_729)
     scenario = choose_scenario(rng, config)
     start.wait()
-    _pause(rng, config.max_pause)
+    _pause(rng, config.min_pause, config.max_pause)
 
     if scenario == "search_only":
         destination = rng.choice(config.destinations)
@@ -311,7 +312,7 @@ def simulate_user(
             "GET",
             "/api/v1/flights/search",
             query={
-                "origin": "BOG",
+                "origin": config.origin,
                 "destination": destination,
                 "date": config.travel_date,
                 "passengers": 1,
@@ -335,7 +336,7 @@ def simulate_user(
                 "GET",
                 "/api/v1/flights/search",
                 query={
-                    "origin": "BOG",
+                    "origin": config.origin,
                     "destination": destination,
                     "date": config.travel_date,
                     "passengers": passenger_count,
@@ -345,9 +346,18 @@ def simulate_user(
             )
             if not isinstance(flights, list) or not flights:
                 last_error = f"no inventory for {destination}/{cabin}/{passenger_count}"
-                _pause(rng, config.max_pause)
+                _pause(rng, config.min_pause, config.max_pause)
                 continue
-            itinerary = rng.choice(flights)
+            selectable = flights
+            if config.target_leg_id:
+                selectable = [
+                    item for item in flights if config.target_leg_id in item.get("leg_ids", [])
+                ]
+            if not selectable:
+                last_error = f"target leg {config.target_leg_id} is no longer available"
+                _pause(rng, config.min_pause, config.max_pause)
+                continue
+            itinerary = rng.choice(selectable)
             leg_ids = itinerary.get("leg_ids")
             if not isinstance(leg_ids, list) or not all(isinstance(item, str) for item in leg_ids):
                 raise SimulationError("search response did not contain valid leg_ids")
@@ -396,7 +406,7 @@ def simulate_user(
             if exc.status == 409 and exc.code == "INVENTORY_UNAVAILABLE":
                 client.metrics.error("inventory_conflict")
                 last_error = str(exc)
-                _pause(rng, config.max_pause)
+                _pause(rng, config.min_pause, config.max_pause)
                 continue
             raise
     return UserResult(
@@ -420,7 +430,7 @@ def finish_journey(
 ) -> UserResult:
     reservation_id = str(reservation["id"])
     locator = str(reservation["locator"])
-    _pause(rng, config.max_pause)
+    _pause(rng, config.min_pause, config.max_pause)
     client.request(
         "lookup",
         "GET",
@@ -488,7 +498,7 @@ def finish_journey(
     if scenario == "confirmed":
         return UserResult(user_number, scenario, "confirmed", True, locator)
 
-    _pause(rng, config.max_pause)
+    _pause(rng, config.min_pause, config.max_pause)
     client.request(
         "cancel_confirmed",
         "POST",
@@ -552,8 +562,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--timeout", type=float, default=15)
     parser.add_argument("--travel-date")
     parser.add_argument("--search-days", type=int, default=30)
+    parser.add_argument("--origin", default="BOG")
     parser.add_argument("--destinations", default="MDE,CLO")
+    parser.add_argument("--target-leg-id")
     parser.add_argument("--booking-retries", type=int, default=5)
+    parser.add_argument("--min-pause", type=float, default=0)
     parser.add_argument("--max-pause", type=float, default=0.25)
     parser.add_argument("--agency-percent", type=int, default=20)
     parser.add_argument("--business-percent", type=int, default=20)
@@ -573,8 +586,8 @@ def config_from_args(args: argparse.Namespace, client: ApiClient | None = None) 
         raise SimulationError("--users must be between 1 and 10000")
     if not 1 <= args.concurrency <= args.users:
         raise SimulationError("--concurrency must be between 1 and --users")
-    if args.timeout <= 0 or args.max_pause < 0:
-        raise SimulationError("--timeout must be positive and --max-pause cannot be negative")
+    if args.timeout <= 0 or args.min_pause < 0 or args.max_pause < args.min_pause:
+        raise SimulationError("--timeout must be positive and pauses must satisfy 0 <= min <= max")
     if not 1 <= args.booking_retries <= 20:
         raise SimulationError("--booking-retries must be between 1 and 20")
     if not 0 <= args.search_days <= 365:
@@ -604,6 +617,9 @@ def config_from_args(args: argparse.Namespace, client: ApiClient | None = None) 
     destinations = tuple(
         value.strip().upper() for value in args.destinations.split(",") if value.strip()
     )
+    origin = args.origin.strip().upper()
+    if len(origin) != 3:
+        raise SimulationError("--origin must be one IATA code")
     if not destinations or any(len(value) != 3 for value in destinations):
         raise SimulationError("--destinations must contain comma-separated IATA codes")
     travel_date = args.travel_date
@@ -622,8 +638,11 @@ def config_from_args(args: argparse.Namespace, client: ApiClient | None = None) 
         seed=args.seed,
         timeout=args.timeout,
         travel_date=travel_date,
+        origin=origin,
         destinations=destinations,
+        target_leg_id=args.target_leg_id,
         booking_retries=args.booking_retries,
+        min_pause=args.min_pause,
         max_pause=args.max_pause,
         agency_percent=args.agency_percent,
         business_percent=args.business_percent,

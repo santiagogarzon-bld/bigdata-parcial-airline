@@ -95,6 +95,16 @@ Carga inicial recomendada para la instancia `t3.micro`:
 
 La fecha del vuelo se descubre automáticamente dentro de los próximos 30 días. El A320 demo tiene una capacidad realista de 162 pasajeros: 150 en Economy y 12 en Business. Los defaults conservan solo 5% de reservas confirmadas y 5% pendientes; las cancelaciones y rechazos liberan asientos pero mantienen pasajeros, pagos, auditoría, tickets anulados y reembolsos como historia transaccional. Usa `--help` para ajustar porcentajes, ritmo, destinos, reintentos y fecha.
 
+### Controlador continuo en EC2
+
+Para poblar gradualmente los vuelos del 11 al 20 de septiembre con tiempos reales, se ejecuta un segundo contenedor en la misma EC2:
+
+```bash
+EC2_HOST=44.198.192.232 ./deploy/start-continuous-simulation.sh
+```
+
+El contenedor `airline-simulator` consulta la API local, inicia usuarios cada 10–25 segundos, deja pausas de 5–45 segundos entre acciones y busca una ocupación heterogénea de 24–36%, cercana al 30% global. Tiene política de reinicio `unless-stopped` y logs rotados (tres archivos de 10 MB). La configuración, el calendario exacto, los escenarios y los comandos de inspección están en [docs/simulation/README.md](../simulation/README.md).
+
 ## Evidencia, parada y eliminación
 
 Guarda health, OpenAPI, búsqueda, reserva, pago, cancelación y outputs con `tee` en `docs/evidence/`. Para una pausa breve, detén EC2 y RDS usando los outputs `ApiInstanceId` y `DatabaseIdentifier`; RDS se inicia automáticamente después de siete días.

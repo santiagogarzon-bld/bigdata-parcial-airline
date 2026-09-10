@@ -1,3 +1,5 @@
+from datetime import UTC, datetime, timedelta
+
 import pytest
 from sqlalchemy import create_engine, select
 from sqlalchemy.exc import OperationalError
@@ -35,10 +37,25 @@ def session(pg_engine):
 
 @pytest.fixture
 def command(session):
-    legs = list(session.scalars(select(FlightLegInstance).order_by(FlightLegInstance.departure_at)))
+    legs = list(
+        session.scalars(
+            select(FlightLegInstance)
+            .where(FlightLegInstance.departure_at > datetime.now(UTC) + timedelta(hours=25))
+            .order_by(FlightLegInstance.departure_at)
+        )
+    )
+    assert legs
+    connected: dict[str, list[FlightLegInstance]] = {}
+    for leg in legs:
+        connected.setdefault(leg.flight_instance_id, []).append(leg)
+    two_leg_journey = next(
+        tuple(item.id for item in sorted(group, key=lambda item: item.sequence))
+        for group in connected.values()
+        if len(group) == 2 and group[0].destination == group[1].origin
+    )
 
     def build(key="k", two=False, agency=False):
-        chosen = (legs[1].id, legs[2].id) if two else (legs[0].id,)
+        chosen = two_leg_journey if two else (legs[0].id,)
         return CreateReservation(
             actor_id="agent" if agency else "guest",
             channel=Channel.AGENCY if agency else Channel.DIRECT,

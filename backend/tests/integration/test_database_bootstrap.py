@@ -15,6 +15,7 @@ from airline_core.persistence.models import (
     Airport,
     Base,
     CabinCatalog,
+    FlightInstance,
     FlightLegInstance,
     Inventory,
     OperationalSetting,
@@ -44,20 +45,55 @@ def test_bootstrap_from_empty_and_idempotent_preserves_commercial_rows(pg_engine
     }
     Session = sessionmaker(pg_engine, expire_on_commit=False)
     with Session() as session:
-        plane_id = session.scalar(select(Aircraft.id).where(Aircraft.code == "DEMO-A320"))
-        assert plane_id is not None
-        assert session.scalar(
-            select(func.count()).select_from(Seat).where(
-                Seat.aircraft_id == plane_id,
-                Seat.cabin == Cabin.ECONOMY,
+        planes = list(
+            session.scalars(
+                select(Aircraft)
+                .where(Aircraft.code.in_(["DEMO-A320-01", "DEMO-A320-02"]))
+                .order_by(Aircraft.code)
             )
-        ) == 150
-        assert session.scalar(
-            select(func.count()).select_from(Seat).where(
-                Seat.aircraft_id == plane_id,
-                Seat.cabin == Cabin.BUSINESS,
+        )
+        assert len(planes) == 2
+        for plane in planes:
+            assert (
+                session.scalar(
+                    select(func.count())
+                    .select_from(Seat)
+                    .where(
+                        Seat.aircraft_id == plane.id,
+                        Seat.cabin == Cabin.ECONOMY,
+                    )
+                )
+                == 150
             )
-        ) == 12
+            assert (
+                session.scalar(
+                    select(func.count())
+                    .select_from(Seat)
+                    .where(
+                        Seat.aircraft_id == plane.id,
+                        Seat.cabin == Cabin.BUSINESS,
+                    )
+                )
+                == 12
+            )
+        assert session.scalar(select(func.count()).select_from(FlightInstance)) == 40
+        assert session.scalar(select(func.count()).select_from(FlightLegInstance)) == 50
+        last_arrival = {}
+        rotations = session.execute(
+            select(
+                FlightInstance.aircraft_id,
+                FlightLegInstance.departure_at,
+                FlightLegInstance.arrival_at,
+            )
+            .join(
+                FlightLegInstance,
+                FlightLegInstance.flight_instance_id == FlightInstance.id,
+            )
+            .order_by(FlightInstance.aircraft_id, FlightLegInstance.departure_at)
+        )
+        for aircraft_id, departure_at, arrival_at in rotations:
+            assert departure_at >= last_arrival.get(aircraft_id, departure_at)
+            last_arrival[aircraft_id] = arrival_at
         assert set(session.scalars(select(Inventory.capacity))) == {12, 150}
     with Session.begin() as session:
         leg = session.scalar(select(FlightLegInstance).order_by(FlightLegInstance.departure_at))

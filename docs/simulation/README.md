@@ -2,6 +2,65 @@
 
 El simulador `deploy/simulate-users.sh` genera actividad transaccional usando exclusivamente la API HTTP. No se conecta directamente a PostgreSQL ni inserta filas fuera de las reglas de negocio de la aplicación.
 
+## Itinerario operacional del 11 al 20 de septiembre de 2026
+
+El seed crea la misma rotación cada día, en hora local de Colombia (`America/Bogota`). Hay cuatro vuelos comerciales y cinco tramos diarios, porque `DE200` tiene escala en Medellín:
+
+| Avión | Vuelo | Tramo | Sale | Llega | Giro antes del siguiente tramo |
+|---|---|---|---:|---:|---:|
+| `DEMO-A320-01` | `DE100` | BOG → MDE | 07:00 | 08:00 | 75 min |
+| `DEMO-A320-01` | `DE101` | MDE → BOG | 09:15 | 10:15 | fin de rotación |
+| `DEMO-A320-02` | `DE200` | BOG → MDE | 08:00 | 09:00 | 60 min |
+| `DEMO-A320-02` | `DE200` | MDE → CLO | 10:00 | 11:00 | 75 min |
+| `DEMO-A320-02` | `DE201` | CLO → BOG | 12:15 | 13:25 | fin de rotación |
+
+En total son 40 instancias de vuelo y 50 instancias de tramo durante los diez días. Cada avión tiene 150 sillas Economy y 12 Business. El mismo identificador físico de avión nunca aparece en dos tramos que se solapen; la prueba de bootstrap ordena todos sus tramos y comprueba que cada salida sea posterior o igual a la llegada anterior.
+
+## Simulación continua a ritmo humano
+
+`airline_core.traffic_daemon` es el controlador de larga duración. En lugar de completar miles de operaciones en un bucle inmediato:
+
+- inicia un usuario nuevo cada 10 a 25 segundos;
+- cada usuario espera entre 5 y 45 segundos entre buscar, reservar, consultar, pagar, consultar tickets o cancelar;
+- admite hasta ocho recorridos intercalados, como ocurriría con visitantes independientes;
+- genera nombres sintéticos, canal directo o agencia, uno o dos pasajeros y llaves idempotentes propias;
+- escribe cada operación mediante la API, por lo que `created_at`, pagos, auditoría, tickets, reembolsos y demás marcas de tiempo corresponden al instante real de ejecución.
+
+Cada cinco minutos vuelve a leer búsqueda e inventario. La meta no es idéntica para todos los vuelos: aplica de forma determinista 24%, 27%, 30%, 33% o 36% por tramo y cabina, con promedio de flota cercano al 30%. Escoge con más frecuencia los mayores faltantes y da prioridad adicional a las salidas próximas. Al alcanzar las metas deja de conservar nuevas confirmaciones, pero sigue produciendo búsquedas, holds cancelados, pagos rechazados y cancelaciones confirmadas válidas, de modo que la historia transaccional continúa creciendo sin llenar indefinidamente la cabina.
+
+La mezcla mientras falta ocupación es aproximadamente:
+
+| Recorrido | Proporción | Efecto neto en ocupación |
+|---|---:|---|
+| Confirmación conservada | 60% | aumenta confirmados |
+| Confirmación y cancelación | 10% | libera la silla y conserva la historia completa |
+| Pago rechazado | 15% | libera la silla |
+| Cancelación del hold | 10% | libera la silla |
+| Solo búsqueda | 5% | no altera inventario |
+
+Para salidas a menos de 24 horas, el 10% de confirmación y cancelación se redistribuye entre cancelación de hold y pago rechazado. Así, el simulador respeta la política real de cancelación en vez de forzar una operación inválida.
+
+El contenedor se inicia en la EC2 con:
+
+```bash
+EC2_HOST=44.198.192.232 ./deploy/start-continuous-simulation.sh
+```
+
+Usa la misma imagen que la API, red local de la instancia y `--restart unless-stopped`, por lo que vuelve a arrancar después de reiniciar Docker o la EC2. Operación básica:
+
+```bash
+ssh -i ~/.ssh/airline-demo-key ec2-user@44.198.192.232 \
+  'docker ps --filter name=airline-simulator'
+ssh -i ~/.ssh/airline-demo-key ec2-user@44.198.192.232 \
+  'docker logs --tail 100 airline-simulator'
+ssh -i ~/.ssh/airline-demo-key ec2-user@44.198.192.232 \
+  'docker stop airline-simulator'
+ssh -i ~/.ssh/airline-demo-key ec2-user@44.198.192.232 \
+  'docker start airline-simulator'
+```
+
+Los logs JSON incluyen `inventory_scan`, avance global hacia la meta, `user_complete`, escenario y resultado. El controlador no altera horarios ni despega vuelos: solo simula comportamiento comercial sobre el itinerario ya sembrado.
+
 ## Ejecución
 
 ```bash
