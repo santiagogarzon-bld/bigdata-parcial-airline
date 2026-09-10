@@ -4,13 +4,13 @@ La arquitectura, el modelo, los controles y los diagramas se explican de forma
 consolidada en el
 [Diseño detallado de la capa analítica](../analytics-detailed-design.md).
 
-La plantilla `infra/airline-learner-lab.yaml` amplía la RDS PostgreSQL existente con la infraestructura de data engineering. No crea una segunda instancia RDS ni recursos `AWS::IAM::*`: el OLTP y el modelo analítico viven en la misma base (`DBName`), separados por el schema `analytics`, que debe ser creado por el DDL del modelo antes de ejecutar el crawler.
+La plantilla `infra/airline-learner-lab.yaml` conserva la RDS OLTP y crea una segunda RDS PostgreSQL privada para analítica. No crea recursos `AWS::IAM::*`. La base `airline_analytics` debe inicializarse con `analytics/bootstrap_warehouse.py` antes de ejecutar el ETL o su crawler.
 
 ## Recursos incluidos
 
 - Dos bases lógicas de AWS Glue Data Catalog: `airline_oltp` y `airline_analytics`.
 - El crawler OLTP se limita explícitamente a `reservations`, `reservation_items`, `payments`, `refunds`, `audit_events`, `inventories`, `flight_leg_instances`, `flight_instances`, `scheduled_flights`, `scheduled_legs`, `cabins` y `agencies`; no cataloga todo `public` ni tablas de pasajeros, agentes o idempotencia.
-- Dos conexiones JDBC de Glue al mismo RDS: una para `public` y otra para `analytics`.
+- Dos conexiones JDBC de Glue a endpoints RDS diferentes: OLTP y OLAP.
 - Un crawler bajo demanda para cada zona del catálogo.
 - Un Glue Job Spark 4.0, dos workers `G.1X` y una ejecución concurrente máxima. El job actual hace snapshot completo idempotente y no activa bookmarks JDBC.
 - Un trigger Glue `SCHEDULED` con `cron(0 * * * ? *)`: ejecuta el ETL al minuto 0 de cada hora UTC.
@@ -23,13 +23,14 @@ El bucket es creado con nombre único por CloudFormation (`AnalyticsArtifactsBuc
 
 1. Copiar `deploy/academy-lab.env.example` a `deploy/academy-lab.env` y sustituir el account ID de `GLUE_ROLE_ARN` por el ARN real de `LabRole`. No guardar contraseñas en ese archivo.
 2. Para un stack nuevo, ejecutar `./deploy/create-stack.sh`; CloudFormation crea el bucket privado y el job apunta al objeto `etl/analytics_job.py`. Después de crear el stack se debe ejecutar una vez `deploy/update-analytics-stack.sh` para subir ese objeto; el script acepta que el template ya esté actualizado.
-3. Para un stack ya desplegado, usar `GLUE_ROLE_ARN=arn:aws:iam::<account>:role/LabRole ./deploy/update-analytics-stack.sh`. El script preserva los parámetros existentes, actualiza el template, espera el resultado, sube `analytics/glue_job.py` con SSE-S3 y solo entonces activa el scheduler horario; no recrea la RDS ni imprime secretos. `analytics/etl.py` es el runner local y no se debe subir como entrypoint Glue.
+3. Para un stack ya desplegado, definir `GLUE_ROLE_ARN` y `ANALYTICS_DB_MASTER_PASSWORD` al ejecutar `deploy/update-analytics-stack.sh`. El script preserva los demás parámetros, crea o actualiza la RDS OLAP, sube `analytics/glue_job.py` con SSE-S3 y activa el scheduler; no imprime secretos.
 
 El script es repetible: si CloudFormation ya está actualizado, reconoce únicamente `No updates are to be performed`, omite la espera, vuelve a subir el objeto Glue y conserva o reactiva el scheduler. Otros errores de actualización abortan el proceso.
 4. Ejecutar `./infra/validate.sh` y revisar `aws cloudformation validate-template` con el perfil del laboratorio.
-5. Construir y desplegar la imagen actualizada con el flujo existente de
-   `deploy/ec2-run.sh`. Su comando de bootstrap ejecuta `alembic upgrade head`
-   y crea `analytics`; el crawler no sustituye las migraciones. Antes de una
+5. Inicializar la RDS OLAP con `analytics/bootstrap_warehouse.py`. Construir y
+   desplegar la imagen actualizada con el flujo existente. En OLTP,
+   `alembic upgrade head` elimina el warehouse transicional; el crawler no
+   sustituye la inicialización analítica. Antes de una
    actualización productiva se debe seguir la política de backup descrita en
    `backend/README.md`.
 6. En Glue, ejecutar primero `airline-oltp-crawler` y `airline-analytics-crawler` cuando haya tablas creadas. Confirmar después que `airline-analytics-etl-hourly` está en estado `ACTIVATED`; el script de actualización realiza esta activación.
@@ -64,7 +65,7 @@ El entrypoint Glue debe leer los argumentos con guion bajo requeridos por `getRe
 
 ## Coste y operación
 
-El diseño evita NAT Gateway, endpoints Interface y una segunda RDS para el laboratorio. Los crawlers siguen bajo demanda, pero el job se ejecuta cada hora mientras el trigger permanezca activo. Para detener costos fuera de la ventana de trabajo sin eliminar infraestructura:
+El diseño evita NAT Gateway y endpoints Interface. La segunda RDS usa la clase mínima; los crawlers siguen bajo demanda y el job se ejecuta cada hora mientras el trigger permanezca activo. Para detener costos fuera de la ventana de trabajo sin eliminar infraestructura:
 
 ```bash
 aws glue stop-trigger --name airline-analytics-etl-hourly \

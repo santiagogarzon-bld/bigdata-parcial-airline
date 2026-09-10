@@ -6,7 +6,7 @@ operación AWS y diagramas, consulte el
 
 Las migraciones `backend/alembic/versions/0006_analytics_schema.py` y
 `0007_analytics_refresh.py` crean el schema
-`analytics` dentro de la misma instancia PostgreSQL de la aplicación. Es una
+`analytics` dentro de la RDS independiente `airline_analytics`. Es una
 capa de ingeniería de datos: conserva claves de origen para reconciliación y
 prepara hechos dimensionales, pero no implementa dashboards ni métricas de
 presentación.

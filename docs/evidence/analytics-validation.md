@@ -2,8 +2,26 @@
 
 Fecha: 2026-09-10
 
-Esta evidencia contiene resultados locales reproducibles y no afirma un
-despliegue analítico en AWS.
+## Validación AWS con RDS separadas
+
+El stack `airline-demo` fue actualizado el 10 de septiembre de 2026 para usar
+dos RDS PostgreSQL 16.10 privadas, `db.t3.micro`, Single-AZ y 20 GB gp3:
+`airline_oltp` y `airline_analytics`. OLTP quedó en la migración
+`0008_separate_analytics_database`, con 28 tablas `public` y sin schema
+`analytics`; OLAP quedó con 13 tablas `analytics`, ninguna tabla operacional
+en `public` y ningún foreign server persistente.
+
+La primera carga entre instancias fue `SUCCEEDED` con 1.389 filas extraídas y
+cargadas. La validación mediante el job Glue real también fue `SUCCEEDED` en
+79 segundos: 1.406 filas extraídas/cargadas, `approved_delta=0.00` y
+`refund_delta=0.00`. Los crawlers `airline-oltp-crawler` y
+`airline-analytics-crawler` terminaron `SUCCEEDED`; publicaron respectivamente
+12 fuentes OLTP autorizadas y 13 tablas OLAP. El trigger horario quedó
+`ACTIVATED`. Después del cambio, `/api/v1/health` respondió correctamente y
+la búsqueda BOG–MDE devolvió itinerarios, confirmando que el API continuó
+usando OLTP.
+
+La evidencia histórica local siguiente se conserva como referencia de pruebas.
 
 ## Base de datos y ETL
 

@@ -179,7 +179,7 @@ Esta restricción impide aplicar plenamente mínimo privilegio. En la entrega se
 
 **Q-025 — P0. ¿El profesor permite que OLTP y OLAP compartan una instancia PostgreSQL como dos bases lógicas?** Aunque reduce costo, disminuye aislamiento y puede no satisfacer la intención de “cada instancia”.
 
-> **Respuesta:** Se adopta una sola instancia Amazon RDS PostgreSQL y una sola base `airline_oltp`, con dos schemas aislados: `public` para OLTP y `analytics` para el modelo dimensional. Esta es una desviación explícita y económica frente a una segunda instancia/base física. Si el profesor interpreta estrictamente “a second PostgreSQL database”, el schema `analytics` se migrará sin cambiar su contrato a una segunda RDS pequeña durante la ventana de evidencia.
+> **Respuesta:** Se adoptan dos instancias Amazon RDS PostgreSQL privadas: `airline_oltp` para el modelo operacional y `airline_analytics` para el dimensional. Ambas usan la clase mínima `db.t3.micro`, 20 GB gp3 y Single-AZ. Solo el ETL tiene conectividad y credenciales para ambas; el API permanece limitado a OLTP.
 
 **Q-026 — P0. ¿Se requiere un ETL con AWS Glue, o se acepta otro servicio disponible en Learner Lab?** Opciones a comparar después: Glue Spark; Lambda; script en EC2; otra. AWS DMS no aparece entre los servicios permitidos en el README suministrado.
 

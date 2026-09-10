@@ -8,18 +8,13 @@ catálogo, seguridad, calidad, reconciliación y operación en AWS. No implement
 dashboards, indicadores de negocio, visualizaciones, modelos predictivos ni
 interpretación de resultados.
 
-La solución conserva Amazon RDS PostgreSQL como fuente de verdad y separa los
-datos mediante schemas en la misma base:
+La solución usa dos Amazon RDS PostgreSQL privadas e independientes:
 
-- `public`: aplicación transaccional OLTP;
-- `analytics`: dimensiones, hechos, puente y tablas de control ETL.
+- `airline_oltp`: aplicación transaccional en `public`;
+- `airline_analytics`: dimensiones, hechos, puente y control en `analytics`.
 
-Esta decisión responde al presupuesto y a las restricciones de AWS Academy.
-No ofrece aislamiento físico de cómputo: si la carga analítica creciera o
-afectara al OLTP, el contrato dimensional debe migrarse a una segunda RDS o a
-un warehouse administrado. También deja explícita la desviación frente a una
-lectura literal del requerimiento de una segunda base PostgreSQL: en esta
-versión prevalece el requerimiento acordado de un schema `analytics` en RDS.
+Las dos instancias son `db.t3.micro`, Single-AZ y 20 GB gp3. El aislamiento de
+cómputo satisface el requerimiento sin sobredimensionar el laboratorio.
 
 ## 2. Diagramas
 
@@ -38,11 +33,12 @@ JDBC con TLS, dos bases lógicas en Glue Data Catalog, dos crawlers bajo demanda
 un bucket S3 privado para el script y temporales, métricas/logs en CloudWatch y
 un trigger Glue horario.
 
-El job no contiene una segunda implementación de las reglas. Resuelve el
-endpoint con las conexiones Glue y, por JDBC, invoca la función versionada
+El job resuelve ambos endpoints, crea una vista FDW transaccional y efímera de
+las doce fuentes y, por JDBC, invoca la función versionada
 `analytics.refresh_warehouse(run_id, snapshot_at)`. La transformación
 set-based vive en PostgreSQL y es gestionada por Alembic; así, el runner local
-y AWS Glue usan el mismo contrato.
+y AWS Glue usan el mismo contrato. El servidor FDW y sus tablas se eliminan
+antes del commit; OLAP no conserva acceso directo a OLTP.
 
 El tráfico Glue–RDS circula por ENI en subred privada y un security group
 dedicado. RDS solo admite PostgreSQL desde los grupos de la API y de Glue. El

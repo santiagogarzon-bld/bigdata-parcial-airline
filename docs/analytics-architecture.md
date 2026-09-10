@@ -11,17 +11,15 @@ dimensional, el proceso ETL, su operación en AWS Glue, catálogo, controles de
 calidad, trazabilidad y costos. No incluye dashboards, visualizaciones,
 pronósticos ni interpretación de indicadores.
 
-La implementación académica mantiene una sola instancia Amazon RDS PostgreSQL
-y separa físicamente las tablas por schemas:
+La implementación desplegada usa dos instancias Amazon RDS PostgreSQL privadas:
 
-- `public`: sistema transaccional OLTP y fuente de verdad;
-- `analytics`: dimensiones, hechos y control de ejecuciones.
+- `airline_oltp`: sistema transaccional y fuente de verdad;
+- `airline_analytics`: dimensiones, hechos y control de ejecuciones.
 
-Esta decisión reduce costo y complejidad en Learner Lab, pero no equivale al
-aislamiento de dos instancias. Es una desviación explícita frente a la posible
-interpretación estricta de «a second PostgreSQL database» del enunciado. En un
-entorno productivo con carga analítica sostenida, el destino debe migrarse a
-una segunda instancia PostgreSQL sin cambiar el contrato dimensional.
+Ambas usan `db.t3.micro`, 20 GB gp3, Single-AZ y un día de backup para mantener
+el costo bajo. El API solo recibe credenciales OLTP. El ETL abre tablas foráneas
+transaccionales durante la carga y las elimina antes del commit; OLAP queda sin
+tablas operacionales ni conexión persistente a OLTP.
 
 ## Flujo
 
@@ -30,7 +28,7 @@ flowchart LR
     API[FastAPI] --> OLTP[(RDS PostgreSQL\npublic / OLTP)]
     SCHED[Glue Trigger\ncada hora, minuto 0 UTC] --> GLUE[AWS Glue ETL]
     GLUE -->|JDBC privado + TLS| OLTP
-    GLUE -->|invoca refresh versionado| OLAP[(RDS PostgreSQL\nanalytics / OLAP)]
+    GLUE -->|carga privada y refresh versionado| OLAP[(RDS PostgreSQL independiente\nairline_analytics)]
     S3[(S3 artefactos y temporales)] --> GLUE
     GC1[Glue Catalog\nairline_oltp] -. crawler JDBC .-> OLTP
     GC2[Glue Catalog\nairline_analytics] -. crawler JDBC .-> OLAP
@@ -60,7 +58,7 @@ sí mismos todas las actualizaciones de estado.
 
 | Servicio o componente | Alternativa considerada | Requisito | Pilares Well-Architected y justificación |
 |---|---|---|---|
-| RDS PostgreSQL compartida, schema `analytics` | Segunda RDS PostgreSQL | FR-036, FR-038, NFR-AN-03 | **Optimización de costos** y **sostenibilidad**: reutiliza capacidad ociosa. **Excelencia operativa**: una sola migración. Sacrifica aislamiento de rendimiento y se declara como limitación académica. |
+| RDS OLAP `db.t3.micro` independiente | Schema compartido | FR-036, FR-038, NFR-AN-03 | **Confiabilidad** y **rendimiento**: las consultas analíticas no compiten con OLTP. **Costos**: clase mínima, Single-AZ y 20 GB. |
 | AWS Glue Spark, 2 workers `G.1X` y trigger horario | Lambda, cron en EC2 | FR-036, FR-039, NFR-AN-01 | **Excelencia operativa**: servicio ETL administrado, scheduler declarativo y ejecuciones observables. **Eficiencia de rendimiento**: transformación set-based. **Costos**: el trigger se desactiva fuera de la ventana del laboratorio. |
 | Glue Data Catalog y dos crawlers JDBC | Metadatos manuales | FR-040 | **Excelencia operativa** y **confiabilidad**: descubrimiento reproducible y separación lógica OLTP/OLAP. Los crawlers se ejecutan solo ante cambios de schema. |
 | S3 cifrado y versionado para el job | Archivo manual en la EC2 | FR-039, NFR-AN-06 | **Confiabilidad** y **excelencia operativa**: artefacto recuperable y versionado. **Seguridad**: acceso público bloqueado y cifrado en reposo. |
@@ -83,14 +81,16 @@ Supuestos en `us-east-1`, sin créditos ni impuestos:
 
 | Componente | Cálculo | Mes objetivo |
 |---|---:|---:|
-| RDS compartida, cómputo | 730 × 0.018 | USD 13.14 |
-| RDS compartida, almacenamiento | 20 × 0.115 | USD 2.30 |
+| RDS OLTP, cómputo | 730 × 0.018 | USD 13.14 |
+| RDS OLTP, almacenamiento | 20 × 0.115 | USD 2.30 |
+| RDS OLAP independiente, cómputo | 730 × 0.018 | USD 13.14 |
+| RDS OLAP independiente, almacenamiento | 20 × 0.115 | USD 2.30 |
 | Glue ETL horario | 720 × 2 × 5/60 × 0.44 | USD 52.80 |
 | Crawlers semanales | 2 × 4.33 × 2 × 10/60 × 0.44 | USD 1.27 |
 | Glue Data Catalog | Bajo free tier asumido | USD 0.00 |
 | S3 | 1 GB y pocas solicitudes | ≈ USD 0.03 |
-| **Total plataforma de datos** | Incluye la RDS ya utilizada por OLTP | **≈ USD 69.54** |
-| **Incremento atribuible a analítica** | Excluye RDS ya existente | **≈ USD 54.10** |
+| **Total plataforma de datos** | Dos RDS y Glue horario | **≈ USD 84.98** |
+| **Incremento atribuible a analítica** | RDS OLAP y Glue | **≈ USD 69.54** |
 
 Para una ventana de demostración de cuatro horas se presupuestan cuatro
 corridas programadas del job y una corrida de cada crawler. El costo
