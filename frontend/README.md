@@ -25,6 +25,8 @@ Search responses may be an array or `{items|results|itineraries|data: [...]}`. R
 
 The adapter sends only persisted fields: `leg_ids`, `cabin`, `passengers` (`given_name`, `surname`), `channel`, and (for `AGENCY`) `agency_id`/`agent_id`. It deliberately does not request buyer contact data or personal documents because those are not part of the API contract. Payment returns a payment result rather than the updated reservation, so the client derives the resulting state and calls `/tickets` separately. Missing ticket or seat fields are displayed as unavailable rather than fabricated.
 
+Reservation idempotency keys are UUID v4 values. The client uses the browser's native `crypto.randomUUID()` when available and falls back to UUID formatting over `crypto.getRandomValues()`—with a final compatibility fallback—when the demo is served from a public HTTP address. This matters because browsers normally expose `randomUUID()` only in secure HTTPS contexts.
+
 For an agency hold, the client uses the canonical demo role `AGENCY_AGENT` and sends `X-Demo-Actor-Id` (agent ID) plus `X-Demo-Agency-Id` (agency ID) on the hold, payment, ticket, and cancellation requests. The seeded demonstration IDs are `agent-7` and `agency-1`; enter those values when running the agency flow. No admin role is exposed by this UI.
 
 The static checks can be run with `node test.js`; no npm install or build step is required. Same-origin hosting is required by the included CSP and is the deployment default.
