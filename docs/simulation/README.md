@@ -6,6 +6,12 @@ El simulador `deploy/simulate-users.sh` genera actividad transaccional usando ex
 
 El seed crea la misma rotación cada día, en hora local de Colombia (`America/Bogota`). Hay cuatro vuelos comerciales y cinco tramos diarios, porque `DE200` tiene escala en Medellín:
 
+Los aeropuertos se identifican con sus códigos IATA:
+
+- `BOG`: Bogotá, Aeropuerto Internacional El Dorado;
+- `MDE`: Medellín, Aeropuerto Internacional José María Córdova;
+- `CLO`: Cali, Aeropuerto Internacional Alfonso Bonilla Aragón. Aunque el aeropuerto está ubicado físicamente en Palmira, `CLO` es el código comercial utilizado para Cali.
+
 | Avión | Vuelo | Tramo | Sale | Llega | Giro antes del siguiente tramo |
 |---|---|---|---:|---:|---:|
 | `DEMO-A320-01` | `DE100` | BOG → MDE | 07:00 | 08:00 | 75 min |
