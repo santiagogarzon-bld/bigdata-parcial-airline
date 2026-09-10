@@ -248,6 +248,12 @@ def test_search_local_time_connections_capacity_and_price_filter(api: ApiHarness
     assert len(connection.json()[0]["segments"]) == 2
     assert [item["sequence"] for item in connection.json()[0]["segments"]] == [1, 2]
     assert _search(api, "CLO", max_stops=0).json() == []
+    with api.sessions.begin() as db:
+        db.execute(
+            update(Inventory)
+            .where(Inventory.cabin == "ECONOMY")
+            .values(held=Inventory.capacity - 6)
+        )
     assert _search(api, "MDE", passengers=7).json() == []
     assert _search(api, "MDE", max_price=0).json() == []
 

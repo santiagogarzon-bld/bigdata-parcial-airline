@@ -29,6 +29,9 @@ from .models import (
     Seat,
 )
 
+DEMO_CAPACITY = {Cabin.ECONOMY: 150, Cabin.BUSINESS: 12}
+SEAT_LETTERS = "ABCDEF"
+
 
 def _upsert(
     session: Session, table: object, rows: list[dict[str, object]], keys: list[str]
@@ -37,6 +40,46 @@ def _upsert(
     stmt = insert(table).values(rows)  # type: ignore[arg-type]
     updates = {key: getattr(stmt.excluded, key) for key in rows[0] if key not in keys}
     session.execute(stmt.on_conflict_do_update(index_elements=keys, set_=updates))
+
+
+def _ensure_demo_seats(session: Session, plane: Aircraft) -> None:
+    """Grow the demo aircraft without deleting or relabelling historical seats."""
+    existing = {
+        seat.label: seat.cabin
+        for seat in session.scalars(select(Seat).where(Seat.aircraft_id == plane.id))
+    }
+    for cabin, target, first_row in (
+        (Cabin.BUSINESS, DEMO_CAPACITY[Cabin.BUSINESS], 1),
+        (Cabin.ECONOMY, DEMO_CAPACITY[Cabin.ECONOMY], 3),
+    ):
+        current = sum(value == cabin for value in existing.values())
+        row = first_row
+        while current < target:
+            for letter in SEAT_LETTERS:
+                label = f"{row}{letter}"
+                if label in existing:
+                    continue
+                session.add(Seat(aircraft_id=plane.id, label=label, cabin=cabin))
+                existing[label] = cabin
+                current += 1
+                if current == target:
+                    break
+            row += 1
+    session.flush()
+
+
+def _refresh_demo_inventory(session: Session, plane: Aircraft) -> None:
+    inventories = session.scalars(
+        select(Inventory)
+        .join(
+            FlightLegInstance,
+            FlightLegInstance.id == Inventory.flight_leg_instance_id,
+        )
+        .join(FlightInstance, FlightInstance.id == FlightLegInstance.flight_instance_id)
+        .where(FlightInstance.aircraft_id == plane.id)
+    )
+    for inventory in inventories:
+        inventory.capacity = DEMO_CAPACITY[Cabin(str(inventory.cabin))]
 
 
 def seed_parameters(session: Session) -> None:
@@ -160,7 +203,10 @@ def seed_parameters(session: Session) -> None:
 def seed_demo(session: Session) -> None:
     """Synthetic BOG-MDE direct and BOG-MDE-CLO connection; safe to rerun in dev/test."""
     seed_parameters(session)
-    if session.scalar(select(Aircraft.id).where(Aircraft.code == "DEMO-A320")):
+    existing_plane = session.scalar(select(Aircraft).where(Aircraft.code == "DEMO-A320"))
+    if existing_plane is not None:
+        _ensure_demo_seats(session, existing_plane)
+        _refresh_demo_inventory(session, existing_plane)
         return
     type_id = session.scalar(select(AircraftType.id).where(AircraftType.code == "A320-200"))
     assert type_id is not None
@@ -197,13 +243,7 @@ def seed_demo(session: Session) -> None:
     plane = Aircraft(code="DEMO-A320", aircraft_type_id=type_id, active=True)
     session.add(plane)
     session.flush()
-    session.add_all(
-        [Seat(aircraft_id=plane.id, label=f"{i}A", cabin=Cabin.ECONOMY) for i in range(1, 7)]
-        + [
-            Seat(aircraft_id=plane.id, label="1C", cabin=Cabin.BUSINESS),
-            Seat(aircraft_id=plane.id, label="2C", cabin=Cabin.BUSINESS),
-        ]
-    )
+    _ensure_demo_seats(session, plane)
     direct, connection = (
         ScheduledFlight(number="DE100", route_id=route_id, active=True),
         ScheduledFlight(number="DE200", route_id=route_id, active=True),
@@ -281,14 +321,14 @@ def seed_demo(session: Session) -> None:
                 Inventory(
                     flight_leg_instance_id=leg.id,
                     cabin=Cabin.ECONOMY,
-                    capacity=6,
+                    capacity=DEMO_CAPACITY[Cabin.ECONOMY],
                     held=0,
                     confirmed=0,
                 ),
                 Inventory(
                     flight_leg_instance_id=leg.id,
                     cabin=Cabin.BUSINESS,
-                    capacity=2,
+                    capacity=DEMO_CAPACITY[Cabin.BUSINESS],
                     held=0,
                     confirmed=0,
                 ),

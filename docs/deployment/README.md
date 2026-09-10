@@ -66,6 +66,33 @@ BASE_URL=http://IP_PUBLICA:8000 ./deploy/smoke-test.sh
 
 Los valores `IP_PUBLICA` y `ENDPOINT_PRIVADO_RDS` aparecen en los outputs `ApiPublicAddress` y `DatabaseEndpoint`.
 
+## Simulación de usuarios concurrentes
+
+`deploy/simulate-users.sh` genera tráfico exclusivamente mediante la API pública. Cada usuario sintético busca disponibilidad y sigue uno de seis recorridos: abandono después de búsqueda, reserva pendiente, cancelación del hold, pago rechazado, confirmación conservada o confirmación seguida de cancelación y reembolso. También mezcla pasajeros directos y agentes, Economy y Business, uno o dos pasajeros, consultas de reserva, tickets, manifiestos y reintentos idempotentes.
+
+Prueba pequeña:
+
+```bash
+./deploy/simulate-users.sh \
+  --base-url http://44.198.192.232:8000 \
+  --users 10 \
+  --concurrency 3
+```
+
+Carga inicial recomendada para la instancia `t3.micro`:
+
+```bash
+./deploy/simulate-users.sh \
+  --base-url http://44.198.192.232:8000 \
+  --users 100 \
+  --concurrency 8 \
+  --seed 20260910 \
+  2>docs/evidence/simulation-progress.log \
+  | tee docs/evidence/simulation-summary.json
+```
+
+La fecha del vuelo se descubre automáticamente dentro de los próximos 30 días. El A320 demo tiene una capacidad realista de 162 pasajeros: 150 en Economy y 12 en Business. Los defaults conservan solo 5% de reservas confirmadas y 5% pendientes; las cancelaciones y rechazos liberan asientos pero mantienen pasajeros, pagos, auditoría, tickets anulados y reembolsos como historia transaccional. Usa `--help` para ajustar porcentajes, ritmo, destinos, reintentos y fecha.
+
 ## Evidencia, parada y eliminación
 
 Guarda health, OpenAPI, búsqueda, reserva, pago, cancelación y outputs con `tee` en `docs/evidence/`. Para una pausa breve, detén EC2 y RDS usando los outputs `ApiInstanceId` y `DatabaseIdentifier`; RDS se inicia automáticamente después de siete días.

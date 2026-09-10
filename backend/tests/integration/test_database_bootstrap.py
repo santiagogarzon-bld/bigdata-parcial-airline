@@ -4,19 +4,22 @@ from uuid import uuid4
 
 import pytest
 from alembic.config import Config
-from sqlalchemy import inspect, select, text
+from sqlalchemy import func, inspect, select, text
 from sqlalchemy.orm import sessionmaker
 
 from airline_core.application.service import BookingService, CreateReservation, PassengerInput
 from airline_core.domain.types import Cabin, Channel
 from airline_core.persistence.bootstrap import bootstrap
 from airline_core.persistence.models import (
+    Aircraft,
     Airport,
     Base,
     CabinCatalog,
     FlightLegInstance,
+    Inventory,
     OperationalSetting,
     Reservation,
+    Seat,
 )
 from alembic import command
 
@@ -40,6 +43,22 @@ def test_bootstrap_from_empty_and_idempotent_preserves_commercial_rows(pg_engine
         "inventories",
     }
     Session = sessionmaker(pg_engine, expire_on_commit=False)
+    with Session() as session:
+        plane_id = session.scalar(select(Aircraft.id).where(Aircraft.code == "DEMO-A320"))
+        assert plane_id is not None
+        assert session.scalar(
+            select(func.count()).select_from(Seat).where(
+                Seat.aircraft_id == plane_id,
+                Seat.cabin == Cabin.ECONOMY,
+            )
+        ) == 150
+        assert session.scalar(
+            select(func.count()).select_from(Seat).where(
+                Seat.aircraft_id == plane_id,
+                Seat.cabin == Cabin.BUSINESS,
+            )
+        ) == 12
+        assert set(session.scalars(select(Inventory.capacity))) == {12, 150}
     with Session.begin() as session:
         leg = session.scalar(select(FlightLegInstance).order_by(FlightLegInstance.departure_at))
         assert leg is not None
@@ -54,7 +73,7 @@ def test_bootstrap_from_empty_and_idempotent_preserves_commercial_rows(pg_engine
             )
         )
         reservation_id = reservation.id
-    bootstrap(url)
+    bootstrap(url, with_demo_data=True)
     with Session() as session:
         assert session.get(Reservation, reservation_id) is not None
         assert session.scalar(select(CabinCatalog).where(CabinCatalog.code == "ECONOMY"))
@@ -62,6 +81,7 @@ def test_bootstrap_from_empty_and_idempotent_preserves_commercial_rows(pg_engine
             select(OperationalSetting).where(OperationalSetting.key == "hold_minutes")
         )
         assert session.scalar(select(Airport).where(Airport.code == "BOG"))
+        assert set(session.scalars(select(Inventory.capacity))) == {12, 150}
 
 
 @pytest.mark.parametrize(
