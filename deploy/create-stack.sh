@@ -15,11 +15,17 @@ DB_INSTANCE_CLASS="${DB_INSTANCE_CLASS:-db.t3.micro}"
 DB_ENGINE_VERSION="${DB_ENGINE_VERSION:-16.10}"
 DB_NAME="${DB_NAME:-airline_oltp}"
 DB_USER="${DB_USER:-airline_admin}"
+GLUE_ROLE_ARN="${GLUE_ROLE_ARN:-}"
 
 if [[ -f "${CONFIG_FILE}" ]]; then
   # shellcheck source=/dev/null
   source "${CONFIG_FILE}"
 fi
+
+[[ "${GLUE_ROLE_ARN}" =~ ^arn:[^:]+:iam::[0-9]{12}:role/.+$ ]] || {
+  echo 'GLUE_ROLE_ARN must be the existing AWS Academy LabRole ARN (no role is created)' >&2
+  exit 2
+}
 
 if [[ -z "${OPERATOR_CIDR:-}" ]]; then
   OPERATOR_IP="$(curl --fail --silent --show-error https://checkip.amazonaws.com)"
@@ -66,6 +72,7 @@ jq -n \
   --arg db_password "${DB_PASSWORD}" \
   --arg db_version "${DB_ENGINE_VERSION}" \
   --arg db_name "${DB_NAME}" \
+  --arg glue_role_arn "${GLUE_ROLE_ARN}" \
   '[
     {ParameterKey:"OperatorCidr",ParameterValue:$operator},
     {ParameterKey:"KeyName",ParameterValue:$key},
@@ -75,7 +82,8 @@ jq -n \
     {ParameterKey:"DBMasterUsername",ParameterValue:$db_user},
     {ParameterKey:"DBMasterPassword",ParameterValue:$db_password},
     {ParameterKey:"DBEngineVersion",ParameterValue:$db_version},
-    {ParameterKey:"DBName",ParameterValue:$db_name}
+    {ParameterKey:"DBName",ParameterValue:$db_name},
+    {ParameterKey:"GlueRoleArn",ParameterValue:$glue_role_arn}
   ]' >"${PARAMETERS_FILE}"
 
 echo "Creating ${STACK_NAME} in ${AWS_REGION}; this creates billable EC2, public IPv4, EBS and RDS resources."

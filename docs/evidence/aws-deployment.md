@@ -41,3 +41,11 @@ Se ejecutó el ciclo completo sobre la API desplegada:
 El smoke test de health, OpenAPI, interfaz y JavaScript también finalizó correctamente.
 
 No se guardaron credenciales ni la contraseña de RDS en este documento o en Git. La contraseña runtime permanece con modo restringido en `/opt/airline/runtime.env` dentro de la EC2.
+
+## Estado de la extensión analítica
+
+Esta evidencia corresponde al despliegue OLTP existente. La extensión Glue y
+el schema `analytics` están implementados y validados localmente, pero todavía
+no se han desplegado en AWS porque la sesión Learner Lab actual deniega las
+operaciones de CloudFormation y Glue. Véase
+[`analytics-validation.md`](./analytics-validation.md).

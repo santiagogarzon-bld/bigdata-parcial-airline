@@ -16,10 +16,11 @@
 | FR-009/028/033 | PostgreSQL named checks, natural unique keys, partial active-seat index and `NUMERIC` | `test_head_schema_contains_all_sqlalchemy_tables_and_critical_constraints`, `test_last_unit_has_one_winner_20_real_postgres` |
 | FR-016/021/022/024 | payments, refunds, ticket/coupon states and idempotency-record schema | `test_multi_segment_rollback_and_payment_ticket_once`, `test_decline_expiry_and_cancellation_are_exactly_once` |
 | Operational DB | Alembic `0001`–`0005`, advisory migration lock and guarded catalog bootstrap | `test_migration_from_scratch`, `test_each_legacy_revision_upgrades_without_losing_valid_reservation` |
+| FR-036–040, INV-08/09 | Alembic `0006`–`0007`, schema `analytics`, set-based refresh, Glue JDBC orchestration and Catalog resources | `test_analytics_schema_contract`, `test_refresh_confirmed_multileg_cancel_and_rerun`, `analytics/tests/test_etl.py`, `infra/validate.sh` |
 | Runtime policy | `application.policy.load_policy`; price, sale, hold, quote, cancellation and refund rules loaded from catalogs | `test_database_policy_changes_hold_pricing_and_refund`, API search/admin policy tests |
 | Idempotency authority | `IdempotencyRecord` plus PostgreSQL advisory lock; reservation columns retained only as audit snapshot | `test_reservation_idempotency_window_is_authoritative`, payment replay/conflict API tests |
 | Agency attribution | active `Agency`/`Agent` validation and migration `0004_reservation_agency_fks` | `test_agency_requires_active_coherent_records`, agency API authorization tests |
 | Demo access boundary | persisted active `DemoIdentity`, exact role and agency checks | API role, forged-role and manifest/admin tests |
 | HTTP workflow | versioned FastAPI adapter, typed responses, stable errors and PostgreSQL request transaction | API E2E lifecycle and error-envelope tests |
 
-`INV-08` and `INV-09` concern the explicitly out-of-phase OLAP/ETL pipeline. The OLTP model retains approved/refunded payments and distinct `CANCELLED`, `EXPIRED`, and `PAYMENT_FAILED` states so that pipeline can enforce them without inference.
+`INV-08` and `INV-09` are now enforced by the analytical pipeline: only approved payments contribute revenue, refunds are allocated and reconciled exactly, and `CANCELLED` remains distinct from `EXPIRED` and `PAYMENT_FAILED`.

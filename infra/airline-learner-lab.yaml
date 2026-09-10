@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: Isolated low-cost airline OLTP demo for AWS Academy Learner Lab (us-east-1).
+Description: Low-cost airline OLTP and analytical data layer for AWS Academy Learner Lab (us-east-1).
 Parameters:
   OperatorCidr:
     Type: String
@@ -40,6 +40,28 @@ Parameters:
     Type: String
     Default: airline_oltp
     AllowedPattern: '^[a-z][a-z0-9_]{0,62}$'
+  AnalyticsScriptKey:
+    Type: String
+    Default: etl/analytics_job.py
+    Description: Object key for the analytics ETL script in the stack-owned bucket
+    AllowedPattern: '^[^/].*[^/]$'
+  AnalyticsTempPrefix:
+    Type: String
+    Default: glue-temp/
+    Description: Object prefix used by Glue for temporary Spark files
+    AllowedPattern: '^[^/].*/$'
+  GlueSourceCatalogName:
+    Type: String
+    Default: airline_oltp
+    AllowedPattern: '^[a-z][a-z0-9_]{0,254}$'
+  GlueAnalyticsCatalogName:
+    Type: String
+    Default: airline_analytics
+    AllowedPattern: '^[a-z][a-z0-9_]{0,254}$'
+  GlueRoleArn:
+    Type: String
+    Description: Existing AWS Academy LabRole ARN; no IAM role is created by this stack
+    AllowedPattern: '^arn:[^:]+:iam::[0-9]{12}:role/.+$'
 Resources:
   VPC:
     Type: AWS::EC2::VPC
@@ -128,6 +150,13 @@ Resources:
     Properties:
       RouteTableId: {Ref: PrivateRouteTable}
       SubnetId: {Ref: PrivateSubnetB}
+  S3GatewayEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      VpcId: {Ref: VPC}
+      ServiceName: {Fn::Sub: 'com.amazonaws.${AWS::Region}.s3'}
+      VpcEndpointType: Gateway
+      RouteTableIds: [{Ref: PrivateRouteTable}]
   ApiSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
@@ -155,9 +184,29 @@ Resources:
           FromPort: 5432
           ToPort: 5432
           SourceSecurityGroupId: {Ref: ApiSecurityGroup}
+        - IpProtocol: tcp
+          FromPort: 5432
+          ToPort: 5432
+          SourceSecurityGroupId: {Ref: GlueSecurityGroup}
       Tags:
         - {Key: Name, Value: airline-db-sg}
         - {Key: Project, Value: airline-oltp-mvp}
+  GlueSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Glue ENIs can reach PostgreSQL for analytics extraction and load
+      VpcId: {Ref: VPC}
+      Tags:
+        - {Key: Name, Value: airline-glue-sg}
+        - {Key: Project, Value: airline-analytics}
+  GlueSelfIngress:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: {Ref: GlueSecurityGroup}
+      SourceSecurityGroupId: {Ref: GlueSecurityGroup}
+      IpProtocol: tcp
+      FromPort: 0
+      ToPort: 65535
   DBSubnetGroup:
     Type: AWS::RDS::DBSubnetGroup
     Properties:
@@ -192,6 +241,172 @@ Resources:
       Tags:
         - {Key: Name, Value: airline-db}
         - {Key: Project, Value: airline-oltp-mvp}
+  AnalyticsArtifactsBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      VersioningConfiguration:
+        Status: Enabled
+      Tags:
+        - {Key: Name, Value: airline-analytics-artifacts}
+        - {Key: Project, Value: airline-analytics}
+  GlueSourceCatalogDatabase:
+    Type: AWS::Glue::Database
+    Properties:
+      CatalogId: {Ref: AWS::AccountId}
+      DatabaseInput:
+        Name: {Ref: GlueSourceCatalogName}
+        Description: Catalog metadata for the transactional PostgreSQL source
+  GlueAnalyticsCatalogDatabase:
+    Type: AWS::Glue::Database
+    Properties:
+      CatalogId: {Ref: AWS::AccountId}
+      DatabaseInput:
+        Name: {Ref: GlueAnalyticsCatalogName}
+        Description: Catalog metadata for the PostgreSQL analytics schema
+  GlueSourceConnection:
+    Type: AWS::Glue::Connection
+    DependsOn: Database
+    Properties:
+      CatalogId: {Ref: AWS::AccountId}
+      ConnectionInput:
+        Name: airline-oltp-jdbc
+        Description: JDBC connection from Glue private ENIs to the OLTP RDS database
+        ConnectionType: JDBC
+        ConnectionProperties:
+          JDBC_CONNECTION_URL: {Fn::Sub: 'jdbc:postgresql://${Database.Endpoint.Address}:${Database.Endpoint.Port}/${DBName}?sslmode=require'}
+          USERNAME: {Ref: DBMasterUsername}
+          PASSWORD: {Ref: DBMasterPassword}
+          JDBC_ENFORCE_SSL: 'true'
+        PhysicalConnectionRequirements:
+          AvailabilityZone: {Fn::Select: [0, {Fn::GetAZs: ''}]}
+          SubnetId: {Ref: PrivateSubnetA}
+          SecurityGroupIdList: [{Ref: GlueSecurityGroup}]
+  GlueAnalyticsConnection:
+    Type: AWS::Glue::Connection
+    DependsOn: Database
+    Properties:
+      CatalogId: {Ref: AWS::AccountId}
+      ConnectionInput:
+        Name: airline-analytics-jdbc
+        Description: JDBC connection from Glue to the analytics schema in the same RDS instance
+        ConnectionType: JDBC
+        ConnectionProperties:
+          JDBC_CONNECTION_URL: {Fn::Sub: 'jdbc:postgresql://${Database.Endpoint.Address}:${Database.Endpoint.Port}/${DBName}?sslmode=require'}
+          USERNAME: {Ref: DBMasterUsername}
+          PASSWORD: {Ref: DBMasterPassword}
+          JDBC_ENFORCE_SSL: 'true'
+        PhysicalConnectionRequirements:
+          AvailabilityZone: {Fn::Select: [0, {Fn::GetAZs: ''}]}
+          SubnetId: {Ref: PrivateSubnetA}
+          SecurityGroupIdList: [{Ref: GlueSecurityGroup}]
+  GlueSourceCrawler:
+    Type: AWS::Glue::Crawler
+    DependsOn: [GlueSourceCatalogDatabase, GlueSourceConnection]
+    Properties:
+      Name: airline-oltp-crawler
+      Role: {Ref: GlueRoleArn}
+      DatabaseName: {Ref: GlueSourceCatalogName}
+      Description: On-demand crawler for selected OLTP PostgreSQL tables
+      Targets:
+        JdbcTargets:
+          - ConnectionName: airline-oltp-jdbc
+            Path: {Fn::Sub: '${DBName}/public/reservations'}
+          - ConnectionName: airline-oltp-jdbc
+            Path: {Fn::Sub: '${DBName}/public/reservation_items'}
+          - ConnectionName: airline-oltp-jdbc
+            Path: {Fn::Sub: '${DBName}/public/payments'}
+          - ConnectionName: airline-oltp-jdbc
+            Path: {Fn::Sub: '${DBName}/public/refunds'}
+          - ConnectionName: airline-oltp-jdbc
+            Path: {Fn::Sub: '${DBName}/public/audit_events'}
+          - ConnectionName: airline-oltp-jdbc
+            Path: {Fn::Sub: '${DBName}/public/inventories'}
+          - ConnectionName: airline-oltp-jdbc
+            Path: {Fn::Sub: '${DBName}/public/flight_leg_instances'}
+          - ConnectionName: airline-oltp-jdbc
+            Path: {Fn::Sub: '${DBName}/public/flight_instances'}
+          - ConnectionName: airline-oltp-jdbc
+            Path: {Fn::Sub: '${DBName}/public/scheduled_flights'}
+          - ConnectionName: airline-oltp-jdbc
+            Path: {Fn::Sub: '${DBName}/public/scheduled_legs'}
+          - ConnectionName: airline-oltp-jdbc
+            Path: {Fn::Sub: '${DBName}/public/cabins'}
+          - ConnectionName: airline-oltp-jdbc
+            Path: {Fn::Sub: '${DBName}/public/agencies'}
+      SchemaChangePolicy:
+        UpdateBehavior: UPDATE_IN_DATABASE
+        DeleteBehavior: DEPRECATE_IN_DATABASE
+      RecrawlPolicy:
+        RecrawlBehavior: CRAWL_EVERYTHING
+  GlueAnalyticsCrawler:
+    Type: AWS::Glue::Crawler
+    DependsOn: [GlueAnalyticsCatalogDatabase, GlueAnalyticsConnection]
+    Properties:
+      Name: airline-analytics-crawler
+      Role: {Ref: GlueRoleArn}
+      DatabaseName: {Ref: GlueAnalyticsCatalogName}
+      Description: On-demand crawler for the analytics PostgreSQL schema
+      Targets:
+        JdbcTargets:
+          - ConnectionName: airline-analytics-jdbc
+            Path: {Fn::Sub: '${DBName}/analytics/%'}
+      SchemaChangePolicy:
+        UpdateBehavior: UPDATE_IN_DATABASE
+        DeleteBehavior: DEPRECATE_IN_DATABASE
+      RecrawlPolicy:
+        RecrawlBehavior: CRAWL_EVERYTHING
+  GlueAnalyticsJob:
+    Type: AWS::Glue::Job
+    DependsOn: [GlueSourceConnection, GlueAnalyticsConnection]
+    Properties:
+      Name: airline-analytics-etl
+      Description: On-demand Spark ETL from OLTP PostgreSQL into the analytics schema
+      Role: {Ref: GlueRoleArn}
+      GlueVersion: '4.0'
+      WorkerType: G.1X
+      NumberOfWorkers: 2
+      Timeout: 30
+      ExecutionProperty:
+        MaxConcurrentRuns: 1
+      Connections:
+        Connections:
+          - airline-oltp-jdbc
+          - airline-analytics-jdbc
+      Command:
+        Name: glueetl
+        PythonVersion: '3'
+        ScriptLocation: {Fn::Sub: 's3://${AnalyticsArtifactsBucket}/${AnalyticsScriptKey}'}
+      DefaultArguments:
+        '--job-language': python
+        '--TempDir': {Fn::Sub: 's3://${AnalyticsArtifactsBucket}/${AnalyticsTempPrefix}'}
+        '--enable-job-insights': 'true'
+        '--enable-metrics': 'true'
+        '--enable-continuous-cloudwatch-log': 'true'
+        '--source_connection_name': airline-oltp-jdbc
+        '--target_connection_name': airline-analytics-jdbc
+        '--source_catalog_database': {Ref: GlueSourceCatalogName}
+        '--target_catalog_database': {Ref: GlueAnalyticsCatalogName}
+        '--target_schema': analytics
+  GlueAnalyticsTrigger:
+    Type: AWS::Glue::Trigger
+    DependsOn: GlueAnalyticsJob
+    Properties:
+      Name: airline-analytics-etl-on-demand
+      Type: ON_DEMAND
+      Description: Manually started trigger for the analytics ETL job
+      Actions:
+        - JobName: airline-analytics-etl
   ApiInstance:
     Type: AWS::EC2::Instance
     DependsOn: PublicDefaultRoute
@@ -237,3 +452,10 @@ Outputs:
   DatabaseEndpoint: {Value: {Fn::GetAtt: [Database, Endpoint.Address]}}
   DatabaseIdentifier: {Value: {Ref: Database}}
   DatabasePort: {Value: {Fn::GetAtt: [Database, Endpoint.Port]}}
+  GlueSourceCatalogDatabaseName: {Value: {Ref: GlueSourceCatalogName}}
+  GlueAnalyticsCatalogDatabaseName: {Value: {Ref: GlueAnalyticsCatalogName}}
+  GlueAnalyticsJobName: {Value: {Ref: GlueAnalyticsJob}}
+  GlueAnalyticsTriggerName: {Value: {Ref: GlueAnalyticsTrigger}}
+  AnalyticsArtifactsBucketName: {Value: {Ref: AnalyticsArtifactsBucket}}
+  AnalyticsScriptS3Uri:
+    Value: {Fn::Sub: 's3://${AnalyticsArtifactsBucket}/${AnalyticsScriptKey}'}

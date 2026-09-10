@@ -171,7 +171,7 @@ Esta restricción impide aplicar plenamente mínimo privilegio. En la entrega se
 
 **Q-023 — P0. ¿Qué pregunta analítica será demostrada de extremo a extremo?** Elegir al menos una: ocupación por ruta; ingresos por tarifa; patrones de cancelación. Idealmente priorizar las tres y escoger una para el ETL mínimo.
 
-> **Respuesta:** Se demostrarán de extremo a extremo ingresos reconocidos por tarifa/cabina y patrones de cancelación por ruta, fecha, canal y anticipación. Solo pagos `APPROVED` de reservas `CONFIRMED` cuentan como ingreso bruto; los pagos `REFUNDED` se restan para producir ingreso neto. Las reservas `EXPIRED` o con pago rechazado no se cuentan como cancelaciones voluntarias.
+> **Respuesta:** La capa de ingeniería deja preparadas las tres preguntas del escenario: ocupación reservada por ruta operacional y cabina, ingresos aprobados/netos por tarifa y cabina, y patrones de cancelación por ruta, fecha, canal y anticipación. Solo pagos `APPROVED` generan ingreso aprobado; los registros de `refunds` se asignan proporcionalmente por ítem y se restan para producir ingreso neto. `CANCELLED` identifica una cancelación voluntaria y `previously_confirmed` separa las cancelaciones con compra previa; `EXPIRED` y `PAYMENT_FAILED` nunca se cuentan como cancelaciones. Esta fase carga hechos confiables, pero no construye dashboards ni interpreta los indicadores.
 
 **Q-024 — P0. ¿Qué frescura necesita OLAP?** Opciones: carga única para demostración; bajo demanda; diaria; cada hora; casi en tiempo real. Relacionar la respuesta con el presupuesto.
 
@@ -179,7 +179,7 @@ Esta restricción impide aplicar plenamente mínimo privilegio. En la entrega se
 
 **Q-025 — P0. ¿El profesor permite que OLTP y OLAP compartan una instancia PostgreSQL como dos bases lógicas?** Aunque reduce costo, disminuye aislamiento y puede no satisfacer la intención de “cada instancia”.
 
-> **Respuesta:** Se propone una sola instancia Amazon RDS PostgreSQL con dos bases lógicas separadas, `airline_oltp` y `airline_olap`, para reducir costos. Es una suposición académica pendiente de confirmación: si el profesor interpreta el enunciado como dos instancias RDS independientes, se desplegarán dos instancias pequeñas solo durante la ventana de evidencia.
+> **Respuesta:** Se adopta una sola instancia Amazon RDS PostgreSQL y una sola base `airline_oltp`, con dos schemas aislados: `public` para OLTP y `analytics` para el modelo dimensional. Esta es una desviación explícita y económica frente a una segunda instancia/base física. Si el profesor interpreta estrictamente “a second PostgreSQL database”, el schema `analytics` se migrará sin cambiar su contrato a una segunda RDS pequeña durante la ventana de evidencia.
 
 **Q-026 — P0. ¿Se requiere un ETL con AWS Glue, o se acepta otro servicio disponible en Learner Lab?** Opciones a comparar después: Glue Spark; Lambda; script en EC2; otra. AWS DMS no aparece entre los servicios permitidos en el README suministrado.
 
@@ -502,47 +502,47 @@ Las respuestas deben incluir una métrica verificable y una condición de medici
 
 **Q-093. ¿Cuál será el grano de la tabla de hechos principal?** Ejemplos: una fila por pasajero-segmento; una fila por pago; una fila por cambio de estado.
 
-> **Respuesta:** [POR RESPONDER]
+> **Respuesta:** Se usan tres granos complementarios para evitar métricas ambiguas: `fact_sales_segment`, una fila por `reservation_item` (un pasajero en un tramo); `fact_reservation`, una fila por reserva; y `fact_leg_occupancy`, una fila por inventario tramo/cabina y momento de snapshot. Un bridge reserva-ruta permite filtrar cancelaciones multi-leg sin duplicar el hecho de reserva.
 
 **Q-094. ¿Qué dimensiones requiere la pregunta analítica elegida?** Evaluar fecha, ruta, aeropuerto, vuelo, tarifa, cabina, agencia y pasajero anonimizado.
 
-> **Respuesta:** [POR RESPONDER]
+> **Respuesta:** Fecha con roles de reserva, salida y cancelación; ruta operacional; instancia de vuelo; cabina; banda de anticipación tarifaria; canal y agencia. No se crea dimensión pasajero porque no es necesaria para las preguntas elegidas y aumentaría exposición de PII.
 
 **Q-095. ¿OLAP usará esquema estrella, copia normalizada o agregado?** Justificar respecto de consultas, volumen y claridad pedagógica.
 
-> **Respuesta:** [POR RESPONDER]
+> **Respuesta:** Esquema estrella en `analytics`, no copia normalizada del OLTP. Las claves surrogate estabilizan dimensiones y las claves `source_*` soportan linaje/upsert. El modelo prioriza consultas y reconciliación claras; la normalización del dominio permanece exclusivamente en `public`.
 
 **Q-096. ¿Qué tablas/vistas exactas cruzan el ETL?** Indicar columnas, transformaciones y datos sensibles excluidos.
 
-> **Respuesta:** [POR RESPONDER]
+> **Respuesta:** Cruzan únicamente reservas, ítems de reserva, pagos aprobados, refunds, auditoría de estados, inventarios, instancias/tramos/vuelos programados, cabinas y agencias. La transformación produce dimensiones, hechos y bridge; excluye pasajeros, nombres/apellidos, documentos, actores, agentes, localizadores e idempotency keys. El catálogo OLTP se restringe a las doce tablas fuente permitidas.
 
 **Q-097. ¿La carga será completa o incremental?** Para incremental, definir watermark/clave, actualizaciones, cancelaciones tardías y reejecución idempotente. Los bookmarks JDBC de Glue se basan en claves ordenables y capturan filas nuevas por lotes; no resuelven por sí solos actualizaciones o eliminaciones.[^5]
 
-> **Respuesta:** [POR RESPONDER]
+> **Respuesta:** El MVP hace snapshot completo set-based porque el volumen del laboratorio es pequeño y los estados se actualizan después de crear la fila. No usa bookmarks JDBC basados solo en `created_at`. Para el escenario 10x se migrará a extracción incremental guiada por `audit_events`, staging y merge de las entidades afectadas.
 
 **Q-098. ¿Cómo se garantiza idempotencia del ETL?** Opciones: `UPSERT` por clave de negocio; reemplazo por partición; staging + merge; truncado y recarga para el demo.
 
-> **Respuesta:** [POR RESPONDER]
+> **Respuesta:** Cada ejecución recibe `run_id` y `snapshot_at`. Dimensiones y hechos hacen `UPSERT` por sus claves de origen; ocupación usa `(source_inventory_id, snapshot_at)`. Repetir un `run_id` exitoso con el mismo snapshot es no-op y reutilizarlo con otro snapshot se rechaza. PostgreSQL serializa corridas mediante advisory lock transaccional.
 
 **Q-099. ¿Qué validaciones de calidad de datos se ejecutan?** Ejemplos: conteos, claves nulas/duplicadas, sumas de ingresos, integridad de fechas y reconciliación OLTP/OLAP.
 
-> **Respuesta:** [POR RESPONDER]
+> **Respuesta:** Conteos separados de reservas, ítems de venta e inventarios; FK dimensionales no nulas; capacidad mayor o igual a retenidos más confirmados; ausencia de claves fuente duplicadas; y reconciliación exacta en COP entre pagos `APPROVED`/refunds OLTP y su asignación en OLAP. El watermark solo avanza después de una corrida exitosa.
 
 **Q-100. ¿Cuántas conexiones, crawlers y bases de catálogo Glue se crearán?** Para fuentes JDBC, Glue requiere una conexión; el crawler escribe metadatos, no copia los datos.[^6]
 
-> **Respuesta:** [POR RESPONDER]
+> **Respuesta:** Dos conexiones JDBC al mismo RDS/base —una identidad lógica para `public` y otra para `analytics`—, dos crawlers bajo demanda y dos bases de Glue Data Catalog: `airline_oltp` y `airline_analytics`. Se usa el `LabRole` preexistente y no se crean ni modifican recursos IAM.
 
 **Q-101. ¿Se catalogarán todas las tablas o solo las necesarias?** Restringir el path JDBC reduce tiempo, costo y exposición de metadatos.
 
-> **Respuesta:** [POR RESPONDER]
+> **Respuesta:** El crawler OLTP cataloga explícitamente doce tablas fuente y no usa `public/%`; quedan fuera pasajeros, agentes, identidades demo, sillas y registros de idempotencia. El crawler analítico cataloga las dimensiones, hechos, bridge y tablas de control del schema `analytics`.
 
 **Q-102. ¿Cómo se demostrará que ambas bases están catalogadas?** Ejemplos: captura/exportación de bases y tablas, schemas inferidos, ejecución de crawler y logs.
 
-> **Respuesta:** [POR RESPONDER]
+> **Respuesta:** Evidencia automatizada/local del schema y ETL, más exportación sanitizada de `get-databases`, `get-tables`, estados `SUCCEEDED` de ambos crawlers y del job, y una consulta a `analytics.etl_run` con conteos y reconciliación. No se capturan contraseñas ni propiedades sensibles de las conexiones.
 
 **Q-103. ¿Qué dispara el ETL?** Manual, horario o evento. La opción debe corresponder a la frescura de Q-024 y al presupuesto.
 
-> **Respuesta:** [POR RESPONDER]
+> **Respuesta:** Trigger Glue `ON_DEMAND` en Learner Lab para controlar costo. La arquitectura objetivo permite ejecución horaria para cumplir frescura de una hora. No se implementa evento casi en tiempo real porque las preguntas no lo requieren y multiplicaría costo/operación.
 
 ## 9. Verificación práctica de Learner Lab
 

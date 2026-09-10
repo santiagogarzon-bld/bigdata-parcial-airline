@@ -24,7 +24,7 @@ The local-only container exposes PostgreSQL on `localhost:54329`. Its credential
 - `airline_core/application`: `BookingService` and database-backed runtime policy.
 - `airline_core/persistence`: SQLAlchemy mappings, database session factory and deterministic seed data.
 - `airline_core/api.py`: typed `/api/v1` adapter, one SQLAlchemy transaction per request, stable errors and demo authorization.
-- `alembic`: the only DDL authority. `0001` is an explicit historical snapshot and `0002`–`0005` are forward migrations.
+- `alembic`: the only DDL authority. `0001` is an explicit historical snapshot, `0002`–`0005` evolve OLTP, and `0006`–`0007` add the isolated `analytics` schema and its refresh function.
 
 `BookingService.create` locks each requested `Inventory` row with PostgreSQL `FOR UPDATE`, ordered by `(flight_leg_instance_id, cabin)`, rechecks capacity, then holds seats and inventory atomically. A partial unique index prevents simultaneous active assignment of the same physical seat for a leg. Released rows retain history, so a seat can be reused later.
 
@@ -65,6 +65,17 @@ AIRLINE_CONCURRENCY_ITERATIONS=30 python3 -m pytest -q -m concurrency
 
 The concurrent test uses independent PostgreSQL sessions and a barrier. It asserts exactly one winner, 19 inventory conflicts, zero remaining availability on the bottleneck, no duplicate physical seat and no partial reservation. It is intentionally configurable because the full 1,200-request profile can be slow in constrained CI.
 
+## Analytical data layer
+
+The same PostgreSQL database now contains an isolated dimensional schema named
+`analytics`. AWS Glue or the local runner invokes one versioned, transactional
+refresh function; it loads reservation, passenger-segment sales and occupancy
+facts without copying passenger PII. See
+[`docs/analytics-architecture.md`](../docs/analytics-architecture.md),
+[`docs/analytics-model.md`](../docs/analytics-model.md), and
+[`analytics/README.md`](../analytics/README.md). Dashboards and business analysis
+remain outside this phase.
+
 ## Limits intentionally outside this MVP
 
-There is no production authentication, resource-level authorization, real payment gateway/card data, OLAP/ETL, visual seat selection, partial cancellation, check-in, baggage, notification or flight change. Payment input accepts only simulated boolean approval and a synthetic operation reference; it stores no PAN/CVV. The AWS artifacts are deployment-ready but this repository preparation does not create AWS or IAM resources.
+There is no production authentication, resource-level authorization, real payment gateway/card data, analytical dashboard, visual seat selection, partial cancellation, check-in, baggage, notification or flight change. Payment input accepts only simulated boolean approval and a synthetic operation reference; it stores no PAN/CVV. The AWS artifacts are deployment-ready but this repository preparation does not create AWS or IAM resources.
