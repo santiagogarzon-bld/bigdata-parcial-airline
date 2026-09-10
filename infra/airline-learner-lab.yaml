@@ -1,0 +1,117 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Low-cost single-AZ airline OLTP demo for AWS Academy Learner Lab.
+Parameters:
+  VpcId: {Type: AWS::EC2::VPC::Id}
+  PublicSubnetId: {Type: AWS::EC2::Subnet::Id}
+  PrivateSubnetA: {Type: AWS::EC2::Subnet::Id}
+  PrivateSubnetB: {Type: AWS::EC2::Subnet::Id}
+  OperatorCidr:
+    Type: String
+    Description: Your current public IPv4 CIDR in /32 form; SSH is never open globally
+    AllowedPattern: '^([0-9]{1,3}\.){3}[0-9]{1,3}/32$'
+  AmiId: {Type: AWS::EC2::Image::Id}
+  LabInstanceProfile: {Type: String, Description: Existing LabInstanceProfile name; never created by this stack}
+  InstanceType:
+    Type: String
+    Default: t3.micro
+    AllowedValues: [t3.nano, t3.micro, t3.small]
+  DBInstanceClass:
+    Type: String
+    Default: db.t3.micro
+    AllowedValues: [db.t3.micro, db.t3.small]
+  DBMasterUsername: {Type: String, Default: airline_admin, NoEcho: true, AllowedPattern: '^[a-zA-Z][a-zA-Z0-9_]{0,15}$'}
+  DBMasterPassword: {Type: String, NoEcho: true, MinLength: 16, MaxLength: 41}
+  DBEngineVersion: {Type: String, Default: '16.10', Description: PostgreSQL minor version; verify availability with describe-db-engine-versions}
+  DBName: {Type: String, Default: airline_oltp, AllowedPattern: '^[a-z][a-z0-9_]{0,62}$'}
+Resources:
+  ApiSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Public HTTP demo port for airline API
+      VpcId: {Ref: VpcId}
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 8000
+          ToPort: 8000
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: {Ref: OperatorCidr}
+      Tags: [{Key: Name, Value: airline-api-sg}]
+  DBSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: PostgreSQL only from airline API security group
+      VpcId: {Ref: VpcId}
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 5432
+          ToPort: 5432
+          SourceSecurityGroupId: {Ref: ApiSecurityGroup}
+      Tags: [{Key: Name, Value: airline-db-sg}]
+  DBSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: Private subnets for airline PostgreSQL
+      SubnetIds: [{Ref: PrivateSubnetA}, {Ref: PrivateSubnetB}]
+  Database:
+    Type: AWS::RDS::DBInstance
+    DeletionPolicy: Snapshot
+    UpdateReplacePolicy: Snapshot
+    Properties:
+      DBName: {Ref: DBName}
+      DBInstanceClass: {Ref: DBInstanceClass}
+      Engine: postgres
+      EngineVersion: {Ref: DBEngineVersion}
+      AllocatedStorage: '20'
+      StorageType: gp3
+      MasterUsername: {Ref: DBMasterUsername}
+      MasterUserPassword: {Ref: DBMasterPassword}
+      DBSubnetGroupName: {Ref: DBSubnetGroup}
+      VPCSecurityGroups: [{Ref: DBSecurityGroup}]
+      PubliclyAccessible: false
+      MultiAZ: false
+      MonitoringInterval: 0
+      BackupRetentionPeriod: 1
+      DeletionProtection: false
+      StorageEncrypted: true
+      AutoMinorVersionUpgrade: true
+  ApiInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: {Ref: AmiId}
+      InstanceType: {Ref: InstanceType}
+      IamInstanceProfile: {Ref: LabInstanceProfile}
+      NetworkInterfaces:
+        - DeviceIndex: '0'
+          AssociatePublicIpAddress: true
+          DeleteOnTermination: true
+          SubnetId: {Ref: PublicSubnetId}
+          GroupSet: [{Ref: ApiSecurityGroup}]
+      Tags: [{Key: Name, Value: airline-api}]
+      UserData:
+        Fn::Base64: |
+          #!/bin/bash
+          set -eu
+          if ! command -v docker >/dev/null 2>&1; then
+            if command -v dnf >/dev/null 2>&1; then
+              dnf install -y docker
+            elif command -v yum >/dev/null 2>&1; then
+              yum install -y docker
+            else
+              echo 'Unsupported AMI: Docker package manager not found' >&2
+              exit 1
+            fi
+          fi
+          systemctl enable --now docker
+          usermod -aG docker ec2-user
+          install -d -m 0750 /opt/airline
+          chown ec2-user:ec2-user /opt/airline || true
+          echo 'Transfer the image and provide DATABASE_URL out of band.' > /opt/airline/README
+Outputs:
+  ApiInstanceId: {Value: {Ref: ApiInstance}}
+  ApiPublicAddress: {Value: {Fn::GetAtt: [ApiInstance, PublicIp]}}
+  DatabaseEndpoint: {Value: {Fn::GetAtt: [Database, Endpoint.Address]}}
+  DatabaseIdentifier: {Value: {Ref: Database}}
+  DatabasePort: {Value: {Fn::GetAtt: [Database, Endpoint.Port]}}
