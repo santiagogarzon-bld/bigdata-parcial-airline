@@ -31,3 +31,10 @@ Design and harden the PostgreSQL reservation schema with Alembic as the only DDL
 # Diagrama ERD base de datos OLTP
 Crea el diagrama de base de datos  usando la skill  /home/nuvu-pc-n4gx/.claude/skills/drawio-skill, donde crearás el ERD (solo el .drawio) y debes dejar documentado cual es la base de datos a crear.
 
+
+# Procesos paralelos para desarrollo
+
+Usando agentes paralelos, y ya teniendo el motor de funcionamiento de la aerolinea que es el corazon del mvp, implementa los gaps faltantes para llegar a la aplicacion MVP. El objetivo es un MVP operacional basado en PostgreSQL OLTP. No debes implementar todavía la parte analitica. Buscamos es tener una aplicaicon de aerolinea funcional, para despues sobre eso aplicar la analitica, igual a como se haría en una empresa real. Primero aplicacion funcional despues analitica, pero para el scope de esta sesión solo aplicacion. Los agentes deben ser GPT5.6 Luna con effort medium donde les pases de manera muy detallada, factual y concreta de lo que se debe realizar.
+
+(Aqui se creo un plan y se valido antes de empezar el desarrollo del código)
+
