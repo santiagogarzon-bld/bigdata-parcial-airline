@@ -10,7 +10,10 @@ from airline_core.domain.types import PaymentState, ReservationState, TicketStat
 from airline_core.persistence.models import (
     AuditEvent,
     Coupon,
+    FareRule,
+    IdempotencyRecord,
     Inventory,
+    OperationalSetting,
     Payment,
     Reservation,
     ReservationItem,
@@ -50,10 +53,92 @@ def test_hold_snapshot_idempotency_and_agency_audit(session, command):
 
 def test_idempotency_key_is_reusable_after_24_hours(session, command):
     first = BookingService(session).create(command("expired-key"))
-    first.created_at -= timedelta(hours=24, seconds=1)
+    record = session.scalar(
+        select(IdempotencyRecord).where(IdempotencyRecord.resource_id == first.id)
+    )
+    assert record is not None
+    record.expires_at -= timedelta(hours=24, seconds=1)
     session.commit()
     second = BookingService(session).create(command("expired-key"))
     assert second.id != first.id
+
+
+def test_idempotency_record_is_authoritative_and_replays(session, command):
+    service = BookingService(session)
+    first = service.create(command("record-key"))
+    record = session.scalar(
+        select(IdempotencyRecord).where(IdempotencyRecord.resource_id == first.id)
+    )
+    assert record is not None
+    assert service.create(command("record-key")).id == first.id
+
+
+def test_operational_hold_policy_changes_expiry(session, command):
+    session.execute(
+        OperationalSetting.__table__.update()
+        .where(OperationalSetting.key == "hold_minutes")
+        .values(value="7")
+    )
+    session.commit()
+    r = BookingService(session).create(command("policy-hold"))
+    assert abs((r.expires_at - r.created_at).total_seconds() - 420) < 1
+
+
+def test_fare_policy_changes_total(session, command):
+    first = BookingService(session).create(command("price-a"))
+    session.execute(
+        FareRule.__table__.update().where(FareRule.code == "ACADEMIC_TAX_RATE").values(value="0.20")
+    )
+    session.commit()
+    second = BookingService(session).create(command("price-b"))
+    assert second.total > first.total
+
+
+def test_idempotency_record_conflict_and_expiry(session, command):
+    service = BookingService(session)
+    service.create(command("conflict-key"))
+    with pytest.raises(IdempotencyKeyReused):
+        service.create(command("conflict-key", two=True))
+    record = session.scalar(
+        select(IdempotencyRecord).where(IdempotencyRecord.idempotency_key == "conflict-key")
+    )
+    assert record is not None
+    record.expires_at -= timedelta(hours=25)
+    session.commit()
+    assert service.create(command("conflict-key", two=True)).id != record.resource_id
+
+
+def test_refund_policy_changes_amount(session, command):
+    service = BookingService(session)
+    reservation = service.create(command("refund-policy"))
+    service.process_payment(reservation.id, "refund-pay", True)
+    session.execute(
+        OperationalSetting.__table__.update()
+        .where(OperationalSetting.key == "refund_percent")
+        .values(value="50")
+    )
+    session.commit()
+    cancelled = service.cancel(reservation.id, "guest")
+    refund = session.scalar(
+        select(Payment).where(Payment.reservation_id == cancelled.id, Payment.state == "REFUNDED")
+    )
+    assert refund is not None and refund.amount == (reservation.total * Decimal("0.5")).quantize(
+        Decimal("0.01")
+    )
+
+
+def test_payment_replay_and_conflict(session, command):
+    service = BookingService(session)
+    first = service.create(command("payment-a"))
+    assert (
+        service.process_payment(first.id, "same-reference", True).id
+        == service.process_payment(first.id, "same-reference", True).id
+    )
+    second = service.create(command("payment-b", two=True))
+    with pytest.raises(IdempotencyKeyReused):
+        service.process_payment(second.id, "same-reference", True)
+    with pytest.raises(IdempotencyKeyReused):
+        service.process_payment(first.id, "same-reference", False)
 
 
 def test_multi_segment_rollback_and_payment_ticket_once(session, command):

@@ -64,12 +64,15 @@ def test_bootstrap_from_empty_and_idempotent_preserves_commercial_rows(pg_engine
         assert session.scalar(select(Airport).where(Airport.code == "BOG"))
 
 
-@pytest.mark.parametrize("revision", ["0001_core_schema", "0002_idempotency_window"])
+@pytest.mark.parametrize(
+    "revision",
+    ["0001_core_schema", "0002_idempotency_window", "0003_operational_schema"],
+)
 def test_each_legacy_revision_upgrades_without_losing_valid_reservation(pg_engine, revision):
     config = _reset_to_base()
     command.upgrade(config, revision)
     reservation_id = str(uuid4())
-    scope_column = ", idempotency_scope" if revision == "0002_idempotency_window" else ""
+    scope_column = ", idempotency_scope" if revision != "0001_core_schema" else ""
     scope_value = ", :scope" if scope_column else ""
     with pg_engine.begin() as connection:
         connection.execute(
@@ -107,3 +110,6 @@ def test_head_schema_contains_all_sqlalchemy_tables_and_critical_constraints(pg_
     item_indexes = {item["name"] for item in inspector.get_indexes("reservation_items")}
     assert "ck_inventory_nonnegative" in inventory_checks
     assert "uq_active_seat_assignment" in item_indexes
+    reservation_fks = {item["name"] for item in inspector.get_foreign_keys("reservations")}
+    assert {"fk_reservation_agency", "fk_reservation_agent"} <= reservation_fks
+    assert "demo_identities" in inspector.get_table_names()
