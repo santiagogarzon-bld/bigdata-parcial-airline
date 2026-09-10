@@ -6,6 +6,7 @@ atomic ELT.  This avoids assuming ``psycopg`` or PyPI access in Glue workers.
 """
 
 import uuid
+import re
 from datetime import datetime, timezone
 
 from awsglue.context import GlueContext
@@ -16,6 +17,10 @@ from pyspark.context import SparkContext
 
 def _safe_error(error: Exception) -> str:
     return f"ETL_REFRESH_FAILED:{type(error).__name__}"[:200]
+
+
+def _literal(value: str) -> str:
+    return "'" + value.replace("'", "''") + "'"
 
 
 def main() -> None:
@@ -33,16 +38,13 @@ def main() -> None:
     context = GlueContext(SparkContext.getOrCreate())
     job = Job(context)
     job.init(args["JOB_NAME"], args)
-    # Glue's JDBC connection metadata is resolved by the Spark/JDBC runtime;
-    # both connections point to the same RDS DB, but separate schemas.
+    # The connections intentionally reference different private RDS instances.
     source = context.extract_jdbc_conf(args["source_connection_name"])
     target = context.extract_jdbc_conf(args["target_connection_name"])
     source_url = source.get("fullUrl") or source.get("url")
     target_url = target.get("fullUrl") or target.get("url")
-    if source_url != target_url:
-        raise RuntimeError(
-            "source and target Glue connections must reference the same RDS database"
-        )
+    if source_url == target_url:
+        raise RuntimeError("source and target must be different PostgreSQL databases")
     if args["target_schema"] != "analytics":
         raise RuntimeError("target_schema must be analytics")
     run_id = str(uuid.uuid4())
@@ -56,12 +58,35 @@ def main() -> None:
     try:
         conn.setAutoCommit(False)
         conn.setTransactionIsolation(jdbc.Connection.TRANSACTION_REPEATABLE_READ)
+        match = re.match(r"jdbc:postgresql://([^:/]+):(\d+)/([^?]+)", source_url or "")
+        if not match:
+            raise RuntimeError("invalid source PostgreSQL JDBC URL")
+        host, port, database = match.groups()
+        ddl = conn.createStatement()
+        ddl.execute("CREATE EXTENSION IF NOT EXISTS postgres_fdw")
+        ddl.execute(
+            "CREATE SERVER airline_etl_source FOREIGN DATA WRAPPER postgres_fdw OPTIONS ("
+            f"host {_literal(host)}, port {_literal(port)}, dbname {_literal(database)}, "
+            "sslmode 'require')"
+        )
+        ddl.execute(
+            "CREATE USER MAPPING FOR CURRENT_USER SERVER airline_etl_source OPTIONS ("
+            f"user {_literal(source.get('user', ''))}, "
+            f"password {_literal(source.get('password', ''))})"
+        )
+        ddl.execute(
+            "IMPORT FOREIGN SCHEMA public LIMIT TO (agencies, audit_events, cabins, "
+            "flight_instances, flight_leg_instances, inventories, payments, refunds, "
+            "reservation_items, reservations, scheduled_flights, scheduled_legs) "
+            "FROM SERVER airline_etl_source INTO public"
+        )
         statement = conn.prepareStatement(
             "SELECT * FROM analytics.refresh_warehouse(?::uuid, ?::timestamptz)"
         )
         statement.setString(1, run_id)
         statement.setString(2, snapshot)
         statement.executeQuery().close()
+        ddl.execute("DROP SERVER airline_etl_source CASCADE")
         conn.commit()
         print(f"analytics refresh succeeded: run_id={run_id}")
     except Exception as error:

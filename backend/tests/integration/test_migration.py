@@ -13,3 +13,4 @@ def test_migration_from_scratch(pg_engine):
     command.upgrade(config, "head")
     names = set(inspect(pg_engine).get_table_names())
     assert {"inventories", "reservations", "reservation_items", "tickets", "audit_events"} <= names
+    assert "analytics" not in inspect(pg_engine).get_schema_names()

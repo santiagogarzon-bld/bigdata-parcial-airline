@@ -8,6 +8,7 @@ from sqlalchemy import inspect, text
 from sqlalchemy.exc import DBAPIError
 
 from airline_core.application.service import BookingService
+from analytics.bootstrap_warehouse import bootstrap
 from alembic import command as alembic_command
 
 pytestmark = pytest.mark.integration
@@ -19,6 +20,10 @@ def migrated_analytics_schema(pg_engine):
     config = Config(str(Path(__file__).parents[2] / "alembic.ini"))
     config.set_main_option("sqlalchemy.url", pg_engine.url.render_as_string(hide_password=False))
     alembic_command.upgrade(config, "head")
+    # Production uses another RDS; this module reuses the disposable test DB
+    # only to exercise the analytical DDL and refresh contract.
+    with pg_engine.connect() as connection:
+        bootstrap(connection.connection.driver_connection)
 
 
 def test_analytics_schema_contract(pg_engine):
