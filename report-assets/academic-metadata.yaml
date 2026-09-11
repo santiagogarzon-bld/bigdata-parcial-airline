@@ -1,0 +1,28 @@
+---
+title: "Airline Reservation System"
+subtitle: "Big Data and Data Engineering Midterm — Final Academic Report"
+author:
+  - "Santiago Garzon"
+date: "September 10, 2026"
+lang: en-US
+subject: "Transactional reservation system and AWS analytical data platform"
+keywords:
+  - Airline reservation
+  - PostgreSQL
+  - AWS Glue
+  - Data engineering
+  - Concurrency control
+abstract: |
+  This report presents the requirements, data model, software architecture,
+  implementation evidence, and AWS analytical platform of a regional-airline
+  reservation MVP. The system prevents seat overselling through PostgreSQL
+  pessimistic locking and database constraints, separates transactional and
+  analytical workloads across two private Amazon RDS instances, and refreshes
+  a dimensional warehouse through an hourly AWS Glue process. The report also
+  evaluates service selection against the AWS Well-Architected Framework and
+  estimates a current list-price run rate of USD 67.41 per month.
+toc: true
+toc-depth: 3
+number-sections: true
+reference-section-title: "References"
+...

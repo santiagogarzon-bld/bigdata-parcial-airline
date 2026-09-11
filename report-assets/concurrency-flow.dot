@@ -1,0 +1,24 @@
+digraph concurrency_flow {
+  graph [rankdir=LR, bgcolor="white", pad="0.3", nodesep="0.45", ranksep="0.65",
+         fontname="DejaVu Sans", label="Concurrent reservation control", labelloc="t",
+         fontsize=20, fontcolor="#17324d"];
+  node [shape=box, style="rounded,filled", fontname="DejaVu Sans", fontsize=11,
+        color="#486581", fillcolor="#f4f8fb", fontcolor="#102a43", margin="0.18,0.12"];
+  edge [fontname="DejaVu Sans", fontsize=9, color="#3b82f6", fontcolor="#334e68",
+        penwidth=1.8, arrowsize=0.8];
+
+  clients [label="20 concurrent clients\nSame last seat", fillcolor="#e8f1ff"];
+  api [label="FastAPI\nValidate request and actor"];
+  idem [label="Idempotency guard\nAdvisory lock + payload hash"];
+  lock [label="PostgreSQL\nSELECT ... FOR UPDATE\nCanonical leg/cabin order", fillcolor="#f2eafe", color="#7c3aed"];
+  check [shape=diamond, label="Seat still\navailable?", fillcolor="#fff7df", color="#d97706"];
+  commit [label="Atomic commit\nReservation + seats + audit", fillcolor="#e7f8ef", color="#198754"];
+  conflict [label="Rollback\n409 INVENTORY_UNAVAILABLE", fillcolor="#fdecec", color="#dc3545"];
+  result [label="Invariant after contention\n1 winner · 19 conflicts\nInventory = 0 · no duplicates", fillcolor="#e7f8ef", color="#198754"];
+
+  clients -> api -> idem -> lock -> check;
+  check -> commit [label="yes (one request)", color="#198754"];
+  check -> conflict [label="no (nineteen requests)", color="#dc3545"];
+  commit -> result [color="#198754"];
+  conflict -> result [color="#dc3545"];
+}
