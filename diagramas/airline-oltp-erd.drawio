@@ -97,7 +97,7 @@
                 <mxCell id="operational_settings" value="operational_settings&#xa;PK key: VARCHAR(64)&#xa;value: VARCHAR(80)&#xa;description: VARCHAR(200)" style="rounded=1;arcSize=6;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;fontFamily=Helvetica;fontSize=12;fontColor=#263238;fillColor=#F2F4F7;strokeColor=#667085;strokeWidth=1.5;shadow=0;" parent="group_4" vertex="1">
                     <mxGeometry x="624" y="94" width="220" height="93" as="geometry"/>
                 </mxCell>
-                <mxCell id="e0" value="agency_id" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#667085;strokeWidth=1.2;fontFamily=Helvetica;fontSize=10;fontColor=#475467;labelBackgroundColor=#FFFFFF;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;" parent="1" source="agents" target="agencies" edge="1">
+                <mxCell id="e0" value="agency_id" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#667085;strokeWidth=1.2;fontFamily=Helvetica;fontSize=10;fontColor=#475467;labelBackgroundColor=#FFFFFF;startArrow=ERzeroToMany;startFill=0;endArrow=ERmandOne;endFill=0;" parent="1" source="agents" target="agencies" edge="1">
                     <mxGeometry relative="1" as="geometry">
                         <Array as="points">
                             <mxPoint x="1720" y="150"/>
@@ -105,7 +105,7 @@
                         </Array>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="e1" value="aircraft_type_id" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#667085;strokeWidth=1.2;fontFamily=Helvetica;fontSize=10;fontColor=#475467;labelBackgroundColor=#FFFFFF;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;" parent="1" source="aircraft" target="aircraft_types" edge="1">
+                <mxCell id="e1" value="aircraft_type_id" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#667085;strokeWidth=1.2;fontFamily=Helvetica;fontSize=10;fontColor=#475467;labelBackgroundColor=#FFFFFF;startArrow=ERzeroToMany;startFill=0;endArrow=ERmandOne;endFill=0;" parent="1" source="aircraft" target="aircraft_types" edge="1">
                     <mxGeometry relative="1" as="geometry">
                         <Array as="points">
                             <mxPoint x="1720" y="740"/>
@@ -113,7 +113,7 @@
                         </Array>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="e2" value="reservation_id" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#667085;strokeWidth=1.2;fontFamily=Helvetica;fontSize=10;fontColor=#475467;labelBackgroundColor=#FFFFFF;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;entryX=0;entryY=0.857143;entryDx=0;entryDy=0;" parent="1" source="itineraries" target="reservations" edge="1">
+                <mxCell id="e2" value="reservation_id" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#667085;strokeWidth=1.2;fontFamily=Helvetica;fontSize=10;fontColor=#475467;labelBackgroundColor=#FFFFFF;startArrow=ERzeroToMany;startFill=0;endArrow=ERmandOne;endFill=0;entryX=0;entryY=0.857143;entryDx=0;entryDy=0;" parent="1" source="itineraries" target="reservations" edge="1">
                     <mxGeometry relative="1" as="geometry">
                         <Array as="points">
                             <mxPoint x="860" y="860"/>
@@ -121,7 +121,7 @@
                         </Array>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="e3" value="reservation_id" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#667085;strokeWidth=1.2;fontFamily=Helvetica;fontSize=10;fontColor=#475467;labelBackgroundColor=#FFFFFF;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;entryX=0;entryY=0.571429;entryDx=0;entryDy=0;" parent="1" source="passengers" target="reservations" edge="1">
+                <mxCell id="e3" value="reservation_id" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#667085;strokeWidth=1.2;fontFamily=Helvetica;fontSize=10;fontColor=#475467;labelBackgroundColor=#FFFFFF;startArrow=ERzeroToMany;startFill=0;endArrow=ERmandOne;endFill=0;entryX=0;entryY=0.571429;entryDx=0;entryDy=0;" parent="1" source="passengers" target="reservations" edge="1">
                     <mxGeometry relative="1" as="geometry">
                         <Array as="points">
                             <mxPoint x="860" y="740"/>
@@ -129,7 +129,7 @@
                         </Array>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="e4" value="reservation_id" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#667085;strokeWidth=1.2;fontFamily=Helvetica;fontSize=10;fontColor=#475467;labelBackgroundColor=#FFFFFF;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;entryX=0;entryY=0.285714;entryDx=0;entryDy=0;" parent="1" source="payments" target="reservations" edge="1">
+                <mxCell id="e4" value="reservation_id" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#667085;strokeWidth=1.2;fontFamily=Helvetica;fontSize=10;fontColor=#475467;labelBackgroundColor=#FFFFFF;startArrow=ERzeroToMany;startFill=0;endArrow=ERmandOne;endFill=0;entryX=0;entryY=0.285714;entryDx=0;entryDy=0;" parent="1" source="payments" target="reservations" edge="1">
                     <mxGeometry relative="1" as="geometry">
                         <Array as="points">
                             <mxPoint x="880" y="580"/>
@@ -137,7 +137,7 @@
                         </Array>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="e5" value="origin" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#667085;strokeWidth=1.2;fontFamily=Helvetica;fontSize=10;fontColor=#475467;labelBackgroundColor=#FFFFFF;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;exitX=1;exitY=0.333333;exitDx=0;exitDy=0;entryX=0;entryY=0.428571;entryDx=0;entryDy=0;" parent="1" source="routes" target="airports" edge="1">
+                <mxCell id="e5" value="origin" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#667085;strokeWidth=1.2;fontFamily=Helvetica;fontSize=10;fontColor=#475467;labelBackgroundColor=#FFFFFF;startArrow=ERzeroToMany;startFill=0;endArrow=ERmandOne;endFill=0;exitX=1;exitY=0.333333;exitDx=0;exitDy=0;entryX=0;entryY=0.428571;entryDx=0;entryDy=0;" parent="1" source="routes" target="airports" edge="1">
                     <mxGeometry relative="1" as="geometry">
                         <Array as="points">
                             <mxPoint x="1980" y="1400"/>
@@ -145,7 +145,7 @@
                         </Array>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="e6" value="destination" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#667085;strokeWidth=1.2;fontFamily=Helvetica;fontSize=10;fontColor=#475467;labelBackgroundColor=#FFFFFF;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;exitX=1;exitY=0.666667;exitDx=0;exitDy=0;entryX=0;entryY=0.571429;entryDx=0;entryDy=0;" parent="1" source="routes" target="airports" edge="1">
+                <mxCell id="e6" value="destination" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#667085;strokeWidth=1.2;fontFamily=Helvetica;fontSize=10;fontColor=#475467;labelBackgroundColor=#FFFFFF;startArrow=ERzeroToMany;startFill=0;endArrow=ERmandOne;endFill=0;exitX=1;exitY=0.666667;exitDx=0;exitDy=0;entryX=0;entryY=0.571429;entryDx=0;entryDy=0;" parent="1" source="routes" target="airports" edge="1">
                     <mxGeometry relative="1" as="geometry">
                         <Array as="points">
                             <mxPoint x="1980" y="1400"/>
@@ -153,7 +153,7 @@
                         </Array>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="e7" value="payment_id" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#667085;strokeWidth=1.2;fontFamily=Helvetica;fontSize=10;fontColor=#475467;labelBackgroundColor=#FFFFFF;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;" parent="1" source="refunds" target="payments" edge="1">
+                <mxCell id="e7" value="payment_id" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#667085;strokeWidth=1.2;fontFamily=Helvetica;fontSize=10;fontColor=#475467;labelBackgroundColor=#FFFFFF;startArrow=ERzeroToMany;startFill=0;endArrow=ERmandOne;endFill=0;" parent="1" source="refunds" target="payments" edge="1">
                     <mxGeometry relative="1" as="geometry">
                         <Array as="points">
                             <mxPoint x="585" y="400"/>
@@ -161,7 +161,7 @@
                         </Array>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="e8" value="reservation_id" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#667085;strokeWidth=1.2;fontFamily=Helvetica;fontSize=10;fontColor=#475467;labelBackgroundColor=#FFFFFF;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;entryX=0;entryY=0.142857;entryDx=0;entryDy=0;" parent="1" source="refunds" target="reservations" edge="1">
+                <mxCell id="e8" value="reservation_id" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#667085;strokeWidth=1.2;fontFamily=Helvetica;fontSize=10;fontColor=#475467;labelBackgroundColor=#FFFFFF;startArrow=ERzeroToMany;startFill=0;endArrow=ERmandOne;endFill=0;entryX=0;entryY=0.142857;entryDx=0;entryDy=0;" parent="1" source="refunds" target="reservations" edge="1">
                     <mxGeometry relative="1" as="geometry">
                         <Array as="points">
                             <mxPoint x="930" y="380"/>
@@ -169,7 +169,7 @@
                         </Array>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="e9" value="route_id" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#667085;strokeWidth=1.2;fontFamily=Helvetica;fontSize=10;fontColor=#475467;labelBackgroundColor=#FFFFFF;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;" parent="1" source="scheduled_flights" target="routes" edge="1">
+                <mxCell id="e9" value="route_id" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#667085;strokeWidth=1.2;fontFamily=Helvetica;fontSize=10;fontColor=#475467;labelBackgroundColor=#FFFFFF;startArrow=ERzeroToMany;startFill=0;endArrow=ERmandOne;endFill=0;" parent="1" source="scheduled_flights" target="routes" edge="1">
                     <mxGeometry relative="1" as="geometry">
                         <Array as="points">
                             <mxPoint x="1720" y="1350"/>
@@ -177,7 +177,7 @@
                         </Array>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="e10" value="aircraft_id" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#667085;strokeWidth=1.2;fontFamily=Helvetica;fontSize=10;fontColor=#475467;labelBackgroundColor=#FFFFFF;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;" parent="1" source="seats" target="aircraft" edge="1">
+                <mxCell id="e10" value="aircraft_id" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#667085;strokeWidth=1.2;fontFamily=Helvetica;fontSize=10;fontColor=#475467;labelBackgroundColor=#FFFFFF;startArrow=ERzeroToMany;startFill=0;endArrow=ERmandOne;endFill=0;" parent="1" source="seats" target="aircraft" edge="1">
                     <mxGeometry relative="1" as="geometry">
                         <Array as="points">
                             <mxPoint x="1450" y="730"/>
@@ -185,7 +185,7 @@
                         </Array>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="e11" value="reservation_id" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#667085;strokeWidth=1.2;fontFamily=Helvetica;fontSize=10;fontColor=#475467;labelBackgroundColor=#FFFFFF;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;entryX=0;entryY=0.428571;entryDx=0;entryDy=0;exitX=1;exitY=0.333333;exitDx=0;exitDy=0;" parent="1" source="tickets" target="reservations" edge="1">
+                <mxCell id="e11" value="reservation_id" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#667085;strokeWidth=1.2;fontFamily=Helvetica;fontSize=10;fontColor=#475467;labelBackgroundColor=#FFFFFF;startArrow=ERzeroToMany;startFill=0;endArrow=ERmandOne;endFill=0;entryX=0;entryY=0.428571;entryDx=0;entryDy=0;exitX=1;exitY=0.333333;exitDx=0;exitDy=0;" parent="1" source="tickets" target="reservations" edge="1">
                     <mxGeometry relative="1" as="geometry">
                         <Array as="points">
                             <mxPoint x="560" y="630"/>
@@ -193,7 +193,7 @@
                         </Array>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="e12" value="passenger_id" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#667085;strokeWidth=1.2;fontFamily=Helvetica;fontSize=10;fontColor=#475467;labelBackgroundColor=#FFFFFF;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;exitX=1;exitY=0.666667;exitDx=0;exitDy=0;entryX=0;entryY=0.333333;entryDx=0;entryDy=0;" parent="1" source="tickets" target="passengers" edge="1">
+                <mxCell id="e12" value="passenger_id" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#667085;strokeWidth=1.2;fontFamily=Helvetica;fontSize=10;fontColor=#475467;labelBackgroundColor=#FFFFFF;startArrow=ERzeroToMany;startFill=0;endArrow=ERmandOne;endFill=0;exitX=1;exitY=0.666667;exitDx=0;exitDy=0;entryX=0;entryY=0.333333;entryDx=0;entryDy=0;" parent="1" source="tickets" target="passengers" edge="1">
                     <mxGeometry relative="1" as="geometry">
                         <Array as="points">
                             <mxPoint x="640" y="630"/>
@@ -204,7 +204,7 @@
                         </Array>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="e13" value="scheduled_flight_id" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#667085;strokeWidth=1.2;fontFamily=Helvetica;fontSize=10;fontColor=#475467;labelBackgroundColor=#FFFFFF;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;entryX=0;entryY=0.333333;entryDx=0;entryDy=0;" parent="1" source="flight_instances" target="scheduled_flights" edge="1">
+                <mxCell id="e13" value="scheduled_flight_id" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#667085;strokeWidth=1.2;fontFamily=Helvetica;fontSize=10;fontColor=#475467;labelBackgroundColor=#FFFFFF;startArrow=ERzeroToMany;startFill=0;endArrow=ERmandOne;endFill=0;entryX=0;entryY=0.333333;entryDx=0;entryDy=0;" parent="1" source="flight_instances" target="scheduled_flights" edge="1">
                     <mxGeometry relative="1" as="geometry">
                         <Array as="points">
                             <mxPoint x="1340" y="1290"/>
@@ -215,7 +215,7 @@
                         </Array>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="e14" value="aircraft_id" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#667085;strokeWidth=1.2;fontFamily=Helvetica;fontSize=10;fontColor=#475467;labelBackgroundColor=#FFFFFF;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;" parent="1" source="flight_instances" target="aircraft" edge="1">
+                <mxCell id="e14" value="aircraft_id" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#667085;strokeWidth=1.2;fontFamily=Helvetica;fontSize=10;fontColor=#475467;labelBackgroundColor=#FFFFFF;startArrow=ERzeroToMany;startFill=0;endArrow=ERmandOne;endFill=0;" parent="1" source="flight_instances" target="aircraft" edge="1">
                     <mxGeometry relative="1" as="geometry">
                         <Array as="points">
                             <mxPoint x="1530" y="1220"/>
@@ -226,7 +226,7 @@
                         </Array>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="e15" value="scheduled_flight_id" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#667085;strokeWidth=1.2;fontFamily=Helvetica;fontSize=10;fontColor=#475467;labelBackgroundColor=#FFFFFF;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;entryX=0;entryY=0.666667;entryDx=0;entryDy=0;exitX=1;exitY=0.25;exitDx=0;exitDy=0;" parent="1" source="scheduled_legs" target="scheduled_flights" edge="1">
+                <mxCell id="e15" value="scheduled_flight_id" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#667085;strokeWidth=1.2;fontFamily=Helvetica;fontSize=10;fontColor=#475467;labelBackgroundColor=#FFFFFF;startArrow=ERzeroToMany;startFill=0;endArrow=ERmandOne;endFill=0;entryX=0;entryY=0.666667;entryDx=0;entryDy=0;exitX=1;exitY=0.25;exitDx=0;exitDy=0;" parent="1" source="scheduled_legs" target="scheduled_flights" edge="1">
                     <mxGeometry relative="1" as="geometry">
                         <Array as="points">
                             <mxPoint x="1450" y="1360"/>
@@ -234,7 +234,7 @@
                         </Array>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="e16" value="origin" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#667085;strokeWidth=1.2;fontFamily=Helvetica;fontSize=10;fontColor=#475467;labelBackgroundColor=#FFFFFF;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;entryX=0;entryY=0.714286;entryDx=0;entryDy=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" parent="1" source="scheduled_legs" target="airports" edge="1">
+                <mxCell id="e16" value="origin" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#667085;strokeWidth=1.2;fontFamily=Helvetica;fontSize=10;fontColor=#475467;labelBackgroundColor=#FFFFFF;startArrow=ERzeroToMany;startFill=0;endArrow=ERmandOne;endFill=0;entryX=0;entryY=0.714286;entryDx=0;entryDy=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" parent="1" source="scheduled_legs" target="airports" edge="1">
                     <mxGeometry relative="1" as="geometry">
                         <Array as="points">
                             <mxPoint x="1450" y="1460"/>
@@ -242,7 +242,7 @@
                         </Array>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="e17" value="destination" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#667085;strokeWidth=1.2;fontFamily=Helvetica;fontSize=10;fontColor=#475467;labelBackgroundColor=#FFFFFF;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;entryX=0;entryY=0.857143;entryDx=0;entryDy=0;exitX=1;exitY=0.75;exitDx=0;exitDy=0;" parent="1" source="scheduled_legs" target="airports" edge="1">
+                <mxCell id="e17" value="destination" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#667085;strokeWidth=1.2;fontFamily=Helvetica;fontSize=10;fontColor=#475467;labelBackgroundColor=#FFFFFF;startArrow=ERzeroToMany;startFill=0;endArrow=ERmandOne;endFill=0;entryX=0;entryY=0.857143;entryDx=0;entryDy=0;exitX=1;exitY=0.75;exitDx=0;exitDy=0;" parent="1" source="scheduled_legs" target="airports" edge="1">
                     <mxGeometry relative="1" as="geometry">
                         <Array as="points">
                             <mxPoint x="1450" y="1460"/>
@@ -250,7 +250,7 @@
                         </Array>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="e18" value="flight_instance_id" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#667085;strokeWidth=1.2;fontFamily=Helvetica;fontSize=10;fontColor=#475467;labelBackgroundColor=#FFFFFF;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;exitX=1;exitY=0.2;exitDx=0;exitDy=0;" parent="1" source="flight_leg_instances" target="flight_instances" edge="1">
+                <mxCell id="e18" value="flight_instance_id" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#667085;strokeWidth=1.2;fontFamily=Helvetica;fontSize=10;fontColor=#475467;labelBackgroundColor=#FFFFFF;startArrow=ERzeroToMany;startFill=0;endArrow=ERmandOne;endFill=0;exitX=1;exitY=0.2;exitDx=0;exitDy=0;" parent="1" source="flight_leg_instances" target="flight_instances" edge="1">
                     <mxGeometry relative="1" as="geometry">
                         <Array as="points">
                             <mxPoint x="1160" y="1240"/>
@@ -258,7 +258,7 @@
                         </Array>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="e19" value="scheduled_leg_id" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#667085;strokeWidth=1.2;fontFamily=Helvetica;fontSize=10;fontColor=#475467;labelBackgroundColor=#FFFFFF;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;exitX=1;exitY=0.4;exitDx=0;exitDy=0;" parent="1" source="flight_leg_instances" target="scheduled_legs" edge="1">
+                <mxCell id="e19" value="scheduled_leg_id" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#667085;strokeWidth=1.2;fontFamily=Helvetica;fontSize=10;fontColor=#475467;labelBackgroundColor=#FFFFFF;startArrow=ERzeroToMany;startFill=0;endArrow=ERmandOne;endFill=0;exitX=1;exitY=0.4;exitDx=0;exitDy=0;" parent="1" source="flight_leg_instances" target="scheduled_legs" edge="1">
                     <mxGeometry relative="1" as="geometry">
                         <Array as="points">
                             <mxPoint x="1160" y="1350"/>
@@ -266,7 +266,7 @@
                         </Array>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="e20" value="origin" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#667085;strokeWidth=1.2;fontFamily=Helvetica;fontSize=10;fontColor=#475467;labelBackgroundColor=#FFFFFF;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;entryX=0;entryY=0.142857;entryDx=0;entryDy=0;exitX=1;exitY=0.6;exitDx=0;exitDy=0;" parent="1" source="flight_leg_instances" target="airports" edge="1">
+                <mxCell id="e20" value="origin" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#667085;strokeWidth=1.2;fontFamily=Helvetica;fontSize=10;fontColor=#475467;labelBackgroundColor=#FFFFFF;startArrow=ERzeroToMany;startFill=0;endArrow=ERmandOne;endFill=0;entryX=0;entryY=0.142857;entryDx=0;entryDy=0;exitX=1;exitY=0.6;exitDx=0;exitDy=0;" parent="1" source="flight_leg_instances" target="airports" edge="1">
                     <mxGeometry relative="1" as="geometry">
                         <Array as="points">
                             <mxPoint x="1290" y="1300"/>
@@ -280,7 +280,7 @@
                         </Array>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="e21" value="destination" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#667085;strokeWidth=1.2;fontFamily=Helvetica;fontSize=10;fontColor=#475467;labelBackgroundColor=#FFFFFF;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;entryX=0;entryY=0.285714;entryDx=0;entryDy=0;exitX=1;exitY=0.8;exitDx=0;exitDy=0;" parent="1" source="flight_leg_instances" target="airports" edge="1">
+                <mxCell id="e21" value="destination" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#667085;strokeWidth=1.2;fontFamily=Helvetica;fontSize=10;fontColor=#475467;labelBackgroundColor=#FFFFFF;startArrow=ERzeroToMany;startFill=0;endArrow=ERmandOne;endFill=0;entryX=0;entryY=0.285714;entryDx=0;entryDy=0;exitX=1;exitY=0.8;exitDx=0;exitDy=0;" parent="1" source="flight_leg_instances" target="airports" edge="1">
                     <mxGeometry relative="1" as="geometry">
                         <Array as="points">
                             <mxPoint x="1290" y="1300"/>
@@ -294,7 +294,7 @@
                         </Array>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="e22" value="ticket_id" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#667085;strokeWidth=1.2;fontFamily=Helvetica;fontSize=10;fontColor=#475467;labelBackgroundColor=#FFFFFF;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;exitX=1;exitY=0.333333;exitDx=0;exitDy=0;" parent="1" source="coupons" target="tickets" edge="1">
+                <mxCell id="e22" value="ticket_id" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#667085;strokeWidth=1.2;fontFamily=Helvetica;fontSize=10;fontColor=#475467;labelBackgroundColor=#FFFFFF;startArrow=ERzeroToMany;startFill=0;endArrow=ERmandOne;endFill=0;exitX=1;exitY=0.333333;exitDx=0;exitDy=0;" parent="1" source="coupons" target="tickets" edge="1">
                     <mxGeometry relative="1" as="geometry">
                         <Array as="points">
                             <mxPoint x="280" y="670"/>
@@ -305,7 +305,7 @@
                         </Array>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="e23" value="flight_leg_instance_id" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#667085;strokeWidth=1.2;fontFamily=Helvetica;fontSize=10;fontColor=#475467;labelBackgroundColor=#FFFFFF;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;exitX=1;exitY=0.666667;exitDx=0;exitDy=0;entryX=0;entryY=0.2;entryDx=0;entryDy=0;" parent="1" source="coupons" target="flight_leg_instances" edge="1">
+                <mxCell id="e23" value="flight_leg_instance_id" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#667085;strokeWidth=1.2;fontFamily=Helvetica;fontSize=10;fontColor=#475467;labelBackgroundColor=#FFFFFF;startArrow=ERzeroToMany;startFill=0;endArrow=ERmandOne;endFill=0;exitX=1;exitY=0.666667;exitDx=0;exitDy=0;entryX=0;entryY=0.2;entryDx=0;entryDy=0;" parent="1" source="coupons" target="flight_leg_instances" edge="1">
                     <mxGeometry relative="1" as="geometry">
                         <Array as="points">
                             <mxPoint x="160" y="1000"/>
@@ -316,7 +316,7 @@
                         </Array>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="e24" value="flight_leg_instance_id" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#667085;strokeWidth=1.2;fontFamily=Helvetica;fontSize=10;fontColor=#475467;labelBackgroundColor=#FFFFFF;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;entryX=0;entryY=0.8;entryDx=0;entryDy=0;" parent="1" source="inventories" target="flight_leg_instances" edge="1">
+                <mxCell id="e24" value="flight_leg_instance_id" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#667085;strokeWidth=1.2;fontFamily=Helvetica;fontSize=10;fontColor=#475467;labelBackgroundColor=#FFFFFF;startArrow=ERzeroToMany;startFill=0;endArrow=ERmandOne;endFill=0;entryX=0;entryY=0.8;entryDx=0;entryDy=0;" parent="1" source="inventories" target="flight_leg_instances" edge="1">
                     <mxGeometry relative="1" as="geometry">
                         <Array as="points">
                             <mxPoint x="870" y="1250"/>
@@ -324,7 +324,7 @@
                         </Array>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="e25" value="itinerary_id" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#667085;strokeWidth=1.2;fontFamily=Helvetica;fontSize=10;fontColor=#475467;labelBackgroundColor=#FFFFFF;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;exitX=1;exitY=0.333333;exitDx=0;exitDy=0;" parent="1" source="itinerary_segments" target="itineraries" edge="1">
+                <mxCell id="e25" value="itinerary_id" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#667085;strokeWidth=1.2;fontFamily=Helvetica;fontSize=10;fontColor=#475467;labelBackgroundColor=#FFFFFF;startArrow=ERzeroToMany;startFill=0;endArrow=ERmandOne;endFill=0;exitX=1;exitY=0.333333;exitDx=0;exitDy=0;" parent="1" source="itinerary_segments" target="itineraries" edge="1">
                     <mxGeometry relative="1" as="geometry">
                         <Array as="points">
                             <mxPoint x="660" y="1030"/>
@@ -335,7 +335,7 @@
                         </Array>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="e26" value="flight_leg_instance_id" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#667085;strokeWidth=1.2;fontFamily=Helvetica;fontSize=10;fontColor=#475467;labelBackgroundColor=#FFFFFF;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;entryX=0;entryY=0.6;entryDx=0;entryDy=0;exitX=1;exitY=0.666667;exitDx=0;exitDy=0;" parent="1" source="itinerary_segments" target="flight_leg_instances" edge="1">
+                <mxCell id="e26" value="flight_leg_instance_id" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#667085;strokeWidth=1.2;fontFamily=Helvetica;fontSize=10;fontColor=#475467;labelBackgroundColor=#FFFFFF;startArrow=ERzeroToMany;startFill=0;endArrow=ERmandOne;endFill=0;entryX=0;entryY=0.6;entryDx=0;entryDy=0;exitX=1;exitY=0.666667;exitDx=0;exitDy=0;" parent="1" source="itinerary_segments" target="flight_leg_instances" edge="1">
                     <mxGeometry relative="1" as="geometry">
                         <Array as="points">
                             <mxPoint x="740" y="1060"/>
@@ -346,7 +346,7 @@
                         </Array>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="e27" value="reservation_id" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#667085;strokeWidth=1.2;fontFamily=Helvetica;fontSize=10;fontColor=#475467;labelBackgroundColor=#FFFFFF;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;entryX=0;entryY=0.714286;entryDx=0;entryDy=0;exitX=1;exitY=0.2;exitDx=0;exitDy=0;" parent="1" source="reservation_items" target="reservations" edge="1">
+                <mxCell id="e27" value="reservation_id" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#667085;strokeWidth=1.2;fontFamily=Helvetica;fontSize=10;fontColor=#475467;labelBackgroundColor=#FFFFFF;startArrow=ERzeroToMany;startFill=0;endArrow=ERmandOne;endFill=0;entryX=0;entryY=0.714286;entryDx=0;entryDy=0;exitX=1;exitY=0.2;exitDx=0;exitDy=0;" parent="1" source="reservation_items" target="reservations" edge="1">
                     <mxGeometry relative="1" as="geometry">
                         <Array as="points">
                             <mxPoint x="580" y="820"/>
@@ -354,7 +354,7 @@
                         </Array>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="e28" value="passenger_id" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#667085;strokeWidth=1.2;fontFamily=Helvetica;fontSize=10;fontColor=#475467;labelBackgroundColor=#FFFFFF;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;entryX=0;entryY=0.666667;entryDx=0;entryDy=0;exitX=1;exitY=0.4;exitDx=0;exitDy=0;" parent="1" source="reservation_items" target="passengers" edge="1">
+                <mxCell id="e28" value="passenger_id" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#667085;strokeWidth=1.2;fontFamily=Helvetica;fontSize=10;fontColor=#475467;labelBackgroundColor=#FFFFFF;startArrow=ERzeroToMany;startFill=0;endArrow=ERmandOne;endFill=0;entryX=0;entryY=0.666667;entryDx=0;entryDy=0;exitX=1;exitY=0.4;exitDx=0;exitDy=0;" parent="1" source="reservation_items" target="passengers" edge="1">
                     <mxGeometry relative="1" as="geometry">
                         <Array as="points">
                             <mxPoint x="580" y="740"/>
@@ -362,7 +362,7 @@
                         </Array>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="e29" value="flight_leg_instance_id" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#667085;strokeWidth=1.2;fontFamily=Helvetica;fontSize=10;fontColor=#475467;labelBackgroundColor=#FFFFFF;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;entryX=0;entryY=0.4;entryDx=0;entryDy=0;exitX=1;exitY=0.8;exitDx=0;exitDy=0;" parent="1" source="reservation_items" target="flight_leg_instances" edge="1">
+                <mxCell id="e29" value="flight_leg_instance_id" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#667085;strokeWidth=1.2;fontFamily=Helvetica;fontSize=10;fontColor=#475467;labelBackgroundColor=#FFFFFF;startArrow=ERzeroToMany;startFill=0;endArrow=ERmandOne;endFill=0;entryX=0;entryY=0.4;entryDx=0;entryDy=0;exitX=1;exitY=0.8;exitDx=0;exitDy=0;" parent="1" source="reservation_items" target="flight_leg_instances" edge="1">
                     <mxGeometry relative="1" as="geometry">
                         <Array as="points">
                             <mxPoint x="760" y="960"/>
@@ -373,7 +373,7 @@
                         </Array>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="e30" value="inventory_id" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#667085;strokeWidth=1.2;fontFamily=Helvetica;fontSize=10;fontColor=#475467;labelBackgroundColor=#FFFFFF;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;" parent="1" source="reservation_items" target="inventories" edge="1">
+                <mxCell id="e30" value="inventory_id" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#667085;strokeWidth=1.2;fontFamily=Helvetica;fontSize=10;fontColor=#475467;labelBackgroundColor=#FFFFFF;startArrow=ERzeroToMany;startFill=0;endArrow=ERmandOne;endFill=0;" parent="1" source="reservation_items" target="inventories" edge="1">
                     <mxGeometry relative="1" as="geometry">
                         <Array as="points">
                             <mxPoint x="610" y="970"/>
@@ -384,7 +384,7 @@
                         </Array>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="e31" value="seat_id" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#667085;strokeWidth=1.2;fontFamily=Helvetica;fontSize=10;fontColor=#475467;labelBackgroundColor=#FFFFFF;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;exitX=1;exitY=0.6;exitDx=0;exitDy=0;" parent="1" source="reservation_items" target="seats" edge="1">
+                <mxCell id="e31" value="seat_id" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;strokeColor=#667085;strokeWidth=1.2;fontFamily=Helvetica;fontSize=10;fontColor=#475467;labelBackgroundColor=#FFFFFF;startArrow=ERzeroToMany;startFill=0;endArrow=ERmandOne;endFill=0;exitX=1;exitY=0.6;exitDx=0;exitDy=0;" parent="1" source="reservation_items" target="seats" edge="1">
                     <mxGeometry relative="1" as="geometry">
                         <Array as="points">
                             <mxPoint x="820" y="950"/>

@@ -1,6 +1,6 @@
 <mxfile host="65bd71144e" compressed="false">
     <diagram id="aws-architecture" name="Arquitectura AWS">
-        <mxGraphModel dx="978" dy="750" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1700" pageHeight="1000" math="0" shadow="0">
+        <mxGraphModel dx="1074" dy="586" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1700" pageHeight="1000" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -44,7 +44,7 @@
                     <mxGeometry x="40" y="250" width="120" height="60" as="geometry"/>
                 </mxCell>
                 <mxCell id="s3_endpoint" value="S3 Gateway Endpoint&#xa;acceso privado al bucket" style="rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillColor=#FFF0E6;strokeColor=#ED7100;fontFamily=Helvetica;fontSize=10;fontStyle=1;strokeWidth=1.5;" parent="private_subnets" vertex="1">
-                    <mxGeometry x="220" y="250" width="140" height="60" as="geometry"/>
+                    <mxGeometry x="240" y="310" width="140" height="60" as="geometry"/>
                 </mxCell>
                 <mxCell id="managed" value="SERVICIOS ADMINISTRADOS DE DATOS" style="rounded=1;arcSize=6;whiteSpace=wrap;html=1;container=1;pointerEvents=0;fillColor=#F5F7FA;strokeColor=#D5DBDB;verticalAlign=top;align=left;fontFamily=Helvetica;fontSize=13;fontStyle=1;fontColor=#5A6B7B;spacingLeft=12;spacingTop=8;strokeWidth=1.5;" parent="aws" vertex="1">
                     <mxGeometry x="920" y="80" width="480" height="540" as="geometry"/>
@@ -98,13 +98,23 @@
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
                 <mxCell id="e13" value="carga ETL" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;endSize=6;strokeColor=#1F6FEB;strokeWidth=1.5;fontColor=#5A6B7B;fontFamily=Helvetica;fontSize=9;" parent="1" source="glue_eni" target="rds_olap" edge="1">
-                    <mxGeometry relative="1" as="geometry"/>
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="910" y="540"/>
+                        </Array>
+                    </mxGeometry>
                 </mxCell>
                 <mxCell id="e8" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;endSize=6;strokeColor=#1F6FEB;strokeWidth=1.5;exitX=1;exitY=0.8;entryX=0;entryY=0.5;" parent="1" source="glue_eni" target="s3_endpoint" edge="1">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
-                <mxCell id="e10" value="JDBC" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;endSize=6;strokeColor=#E7157B;dashed=1;dashPattern=6 4;strokeWidth=1.5;fontColor=#5A6B7B;fontFamily=Helvetica;fontSize=10;exitX=0;exitY=0.5;entryX=1;entryY=0.5;" parent="1" source="crawler" target="rds" edge="1">
-                    <mxGeometry relative="1" as="geometry"/>
+                <mxCell id="e10" value="JDBC" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;endSize=6;strokeColor=#E7157B;dashed=1;dashPattern=6 4;strokeWidth=1.5;fontColor=#5A6B7B;fontFamily=Helvetica;fontSize=10;" parent="1" source="crawler" target="rds" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="1060" y="480"/>
+                            <mxPoint x="1060" y="300"/>
+                            <mxPoint x="749" y="300"/>
+                        </Array>
+                    </mxGeometry>
                 </mxCell>
                 <mxCell id="e14" value="JDBC" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;endSize=6;strokeColor=#E7157B;dashed=1;dashPattern=6 4;strokeWidth=1.5;fontColor=#5A6B7B;fontFamily=Helvetica;fontSize=10;" parent="1" source="crawler" target="rds_olap" edge="1">
                     <mxGeometry relative="1" as="geometry"/>
