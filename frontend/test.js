@@ -8,6 +8,9 @@ for (const route of ['/flights/search?', '/reservations', '/payments', '/cancel'
 assert(source.includes('Idempotency-Key'), 'reservation must be idempotent');
 assert(source.includes('disabled = busy'), 'submit controls must lock while loading');
 assert(source.includes('correlationId'), 'structured correlation errors must be surfaced');
+assert(source.includes("error.code = 'NETWORK_ERROR'") && source.includes('Could not connect to the airline service'), 'network failures must show a useful message');
+assert(source.includes("error.code = 'INVALID_RESPONSE'") && source.includes('response.text()'), 'invalid API responses must be reported');
+assert(source.includes("response.headers.get('X-Correlation-Id')"), 'correlation IDs from response headers must be surfaced');
 assert(!source.includes('document_number') && !html.includes('document_number'), 'documents are not persisted and must not be requested');
 assert(!html.includes('buyer_email') && !html.includes('buyer_phone'), 'non-persisted buyer fields must not be requested');
 assert(html.includes('Content-Security-Policy'), 'basic CSP metadata is required');
