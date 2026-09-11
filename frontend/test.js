@@ -12,6 +12,10 @@ assert(!source.includes('document_number') && !html.includes('document_number'),
 assert(!html.includes('buyer_email') && !html.includes('buyer_phone'), 'non-persisted buyer fields must not be requested');
 assert(html.includes('Content-Security-Policy'), 'basic CSP metadata is required');
 assert(html.includes('id="search-form"') && html.includes('id="booking-form"') && html.includes('id="payment-form"') && html.includes('id="lookup-form"'), 'complete form flow');
+assert.match(html, /<select id="origin" name="origin" required>/, 'origin must be a flight airport select');
+assert.match(html, /<select id="destination" name="destination" required>/, 'destination must be a flight airport select');
+for (const airport of ['BOG', 'MDE', 'CLO']) assert(html.includes(`value="${airport}"`), `missing flight airport ${airport}`);
+assert(source.includes('syncAirportOptions'), 'the same airport cannot be selected twice');
 const envelopes = [{items:[1,2]}, {results:[1]}, {itineraries:[3]}, {data:[4]}];
 const unpack = x => Array.isArray(x) ? x : x.items || x.results || x.itineraries || x.data || [];
 assert.deepEqual(envelopes.map(unpack), [[1,2],[1],[3],[4]]);
